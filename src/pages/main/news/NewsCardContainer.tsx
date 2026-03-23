@@ -42,9 +42,7 @@ export const NewsCardContainer = () => {
     <div className="min-h-screen bg-slate-50 p-6 md:p-10 text-slate-900">
       <header className="mb-12 border-b pb-6">
         <div className="flex items-center justify-between">
-          <h1 className="text-3xl font-extrabold tracking-tighter text-slate-950">
-            📍 AI News 관제 센터
-          </h1>
+          <h1 className="text-black">AI News 관제 센터</h1>
           {/* (선택) 상태 배지 추가 */}
           <Badge
             variant="outline"
