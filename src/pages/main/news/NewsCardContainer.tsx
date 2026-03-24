@@ -35,6 +35,8 @@ export const NewsCardContainer = () => {
     console.log("data", data);
     if (data) setNews(data as News[]);
   };
+  // React 컴포넌트 내에서 호출
+
   useEffect(() => {
     getTodayHotNewsTop5();
   }, []);
