@@ -4,20 +4,18 @@ import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
 import { useStockData } from "@/hooks/useStockData";
 
-interface StockFetchResponse {
-  v: string;
-  vw: number;
-  o: number;
-  c: number;
-  h: number;
-  l: number;
-  t: number;
-  n: number;
-}
-export const StockChartCard = () => {
-  const { symbols, handleSelect, stockChartData, selectedSymbol } =
-    useStockData();
-
+type props = {
+  symbols: string[];
+  stockChartData: any[];
+  selectedSymbol: string;
+  handleSelect: (symbol: string) => void;
+};
+export const StockChartCard = ({
+  symbols,
+  stockChartData,
+  selectedSymbol,
+  handleSelect,
+}: props) => {
   return (
     <div className="w-full h-[400px]  rounded-xl shadow-md bg-white/5 backdrop-blur-lg">
       {symbols.map((symbol) => (

@@ -1,15 +1,10 @@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { useSocket } from "@/hooks/useSocket";
-import { useStockData } from "@/hooks/useStockData";
-import { useEffect } from "react";
 
-export const HoldingStockListCard = () => {
-  const { symbols, stockChartData } = useStockData();
-  const { socketInitialize, socketInstance } = useSocket();
-  useEffect(() => {
-    socketInitialize();
-  }, []);
+type Props = {
+  symbols: string[];
+};
 
+export const HoldingStockListCard = ({ symbols }: Props) => {
   return (
     <Card className="min-w-[220px] flex-1 min-h-[410px] rounded-xl backdrop-blur-sm border-none shadow-none bg-white/5 border-0 ring-0 shadow-none">
       <CardHeader>

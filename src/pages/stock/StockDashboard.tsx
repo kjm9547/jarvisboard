@@ -4,45 +4,22 @@ import { useEffect, useState } from "react";
 import { StockChartCard } from "./StockChartCard";
 import { MyStockSummaryCards } from "./MyStockSummaryCards";
 import { HoldingStockListCard } from "./HoldingStockListCard";
-
-interface analysisReports {
-  id: string;
-  created_at: string;
-  symbol: string;
-  score: number;
-  target_price: number;
-  stop_loss: number;
-  period: string;
-  reason: string;
-  decision: string;
-  processed_at: string;
-  current_price: number;
-}
+import { useStockData } from "@/hooks/useStockData";
+import { useSocket } from "@/hooks/useSocket";
 
 export const StockDashboard = () => {
-  const [analysisReports, setAnalysisReports] = useState<analysisReports[]>([]);
+  const {
+    aiAnalysisReports,
+    symbols,
+    handleSelect,
+    selectedSymbol,
+    stockChartData,
+    getAnalysisReports,
+  } = useStockData();
+  const { socketInitialize, prices } = useSocket();
 
-  const getAnalysisReports = async () => {
-    const today = new Date();
-    const start = new Date("2026-03-23");
-    const end = new Date("2026-03-24");
-
-    const targetDate = "2026-03-23";
-
-    const nextDate = new Date(targetDate);
-    nextDate.setDate(nextDate.getDate() + 1);
-
-    const nextDateStr = nextDate.toISOString().split("T")[0];
-
-    const { data, error } = await supabase
-      .from("analysis_reports")
-      .select("*")
-      .gte("created_at", targetDate)
-      .lt("created_at", nextDateStr)
-      .order("created_at", { ascending: false });
-    if (data) setAnalysisReports(data as analysisReports[]);
-  };
   useEffect(() => {
+    socketInitialize();
     getAnalysisReports();
   }, []);
 
@@ -54,15 +31,20 @@ export const StockDashboard = () => {
       </div>
       <MyStockSummaryCards />
       <div>
-        <HoldingStockListCard />
+        <HoldingStockListCard symbols={symbols} />
       </div>
       <div className="h-[500px] pt-10">
         실시간 차트
-        <StockChartCard />
+        <StockChartCard
+          symbols={symbols}
+          stockChartData={stockChartData}
+          selectedSymbol={selectedSymbol}
+          handleSelect={handleSelect}
+        />
       </div>
       <div className="w-[50%]">
         <p>AI 분석 리스트</p>
-        {analysisReports.map((data) => {
+        {aiAnalysisReports.map((data) => {
           const isBuy = data.decision === "BUY";
           return (
             <div

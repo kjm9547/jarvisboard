@@ -1,3 +1,4 @@
+import { supabase } from "@/service/superbase";
 import { useEffect, useState } from "react";
 
 interface StockFetchResponse {
@@ -10,11 +11,26 @@ interface StockFetchResponse {
   t: number;
   n: number;
 }
+interface analysisReports {
+  id: string;
+  created_at: string;
+  symbol: string;
+  score: number;
+  target_price: number;
+  stop_loss: number;
+  period: string;
+  reason: string;
+  decision: string;
+  processed_at: string;
+  current_price: number;
+}
 export const useStockData = () => {
   const symbols = ["AAPL", "GOOGL", "AMZN", "MSFT", "TSLA"];
   const [stockChartData, setStockChartData] = useState<any[]>([]);
   const [selectedSymbol, setSelectedSymbol] = useState(symbols[0]);
-
+  const [aiAnalysisReports, setAiAnalysisReports] = useState<analysisReports[]>(
+    []
+  );
   const handleSelect = (symbol: string) => {
     setSelectedSymbol(symbol);
   };
@@ -35,31 +51,26 @@ export const useStockData = () => {
     }));
     setStockChartData(chartData);
   };
+  const getAnalysisReports = async () => {
+    const today = new Date();
+    const start = new Date("2026-03-23");
+    const end = new Date("2026-03-24");
 
-  const fetchCurrentPrices = async (symbols: string[]) => {
-    const apiKey = import.meta.env.VITE_MASSIVE_API_KEY;
+    const targetDate = "2026-03-23";
 
-    // 쉼표로 구분된 종목 리스트 생성 (예: "AAPL,NVDA,TSLA")
-    const tickerList = symbols.join(",");
-    const url = `https://api.polygon.io/v2/snapshot/locale/us/markets/stocks/tickers?tickers=${tickerList}&apiKey=${apiKey}`;
+    const nextDate = new Date(targetDate);
+    nextDate.setDate(nextDate.getDate() + 1);
 
-    const response = await fetch(url);
-    const data = await response.json();
+    const nextDateStr = nextDate.toISOString().split("T")[0];
 
-    if (data.status === "OK") {
-      // 필요한 데이터만 정리 (시가: open, 현재가: lastTrade.p 등)
-      return data.tickers.map((ticker: any) => ({
-        symbol: ticker.ticker,
-        open: ticker.day.o, // 오늘 시가
-        current: ticker.lastTrade.p, // 현재 실시간 가격
-        high: ticker.day.h, // 오늘 고가
-        low: ticker.day.l, // 오늘 저가
-        change: ticker.todaysChangePerc.toFixed(2), // 전일 대비 변동률(%)
-      }));
-    }
-    return [];
+    const { data, error } = await supabase
+      .from("analysis_reports")
+      .select("*")
+      .gte("created_at", targetDate)
+      .lt("created_at", nextDateStr)
+      .order("created_at", { ascending: false });
+    if (data) setAiAnalysisReports(data as analysisReports[]);
   };
-
   useEffect(() => {
     fetchChartData();
   }, [selectedSymbol]);
@@ -67,7 +78,9 @@ export const useStockData = () => {
     symbols,
     stockChartData,
     selectedSymbol,
+    aiAnalysisReports,
     handleSelect,
     fetchChartData,
+    getAnalysisReports,
   };
 };

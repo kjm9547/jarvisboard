@@ -42,5 +42,5 @@ export const useSocket = () => {
     };
   };
 
-  return { socketInitialize };
+  return { socketInitialize, prices };
 };
