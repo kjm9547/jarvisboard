@@ -2,6 +2,8 @@ import { supabase } from "@/service/superbase";
 import { AlertCircle, Calendar, TrendingDown, TrendingUp } from "lucide-react";
 import { useEffect, useState } from "react";
 import { StockChartCard } from "./StockChartCard";
+import { MyStockSummaryCards } from "./MyStockSummaryCards";
+import { HoldingStockListCard } from "./HoldingStockListCard";
 
 interface analysisReports {
   id: string;
@@ -22,16 +24,22 @@ export const StockDashboard = () => {
 
   const getAnalysisReports = async () => {
     const today = new Date();
-    const start = new Date(today.setHours(0, 0, 0, 0));
-    const end = new Date(today.setHours(24, 0, 0, 0));
+    const start = new Date("2026-03-23");
+    const end = new Date("2026-03-24");
+
+    const targetDate = "2026-03-23";
+
+    const nextDate = new Date(targetDate);
+    nextDate.setDate(nextDate.getDate() + 1);
+
+    const nextDateStr = nextDate.toISOString().split("T")[0];
 
     const { data, error } = await supabase
       .from("analysis_reports")
       .select("*")
-      .gte("created_at", start.toISOString())
-      .lt("created_at", end.toISOString())
+      .gte("created_at", targetDate)
+      .lt("created_at", nextDateStr)
       .order("created_at", { ascending: false });
-    console.log("data", data);
     if (data) setAnalysisReports(data as analysisReports[]);
   };
   useEffect(() => {
@@ -39,7 +47,15 @@ export const StockDashboard = () => {
   }, []);
 
   return (
-    <div className="px-5">
+    <div className="px-5 pt-5">
+      <div className="flex items-start justify-center mb-5 flex-col gap-2">
+        <p className="text-xl font-bold text-amber-50 ">안녕하세요 주인님</p>
+        <p>투자 현황을 가져왔습니다.</p>
+      </div>
+      <MyStockSummaryCards />
+      <div>
+        <HoldingStockListCard />
+      </div>
       <div className="h-[500px] pt-10">
         실시간 차트
         <StockChartCard />
@@ -49,7 +65,10 @@ export const StockDashboard = () => {
         {analysisReports.map((data) => {
           const isBuy = data.decision === "BUY";
           return (
-            <div className="relative group overflow-hidden rounded-2xl border border-white/10 bg-white/5 p-6 backdrop-blur-xl transition-all hover:bg-white/10">
+            <div
+              key={data.id}
+              className="relative group overflow-hidden rounded-2xl border border-white/10 bg-white/5 p-6 backdrop-blur-xl transition-all hover:bg-white/10"
+            >
               {/* 상단: 티커 및 스코어 */}
               <div className="flex items-start justify-between">
                 <div>
