@@ -25,7 +25,7 @@ interface analysisReports {
   current_price: number;
 }
 export const useStockData = () => {
-  const symbols = ["AAPL", "GOOGL", "AMZN", "MSFT", "TSLA"];
+  const symbols = ["AAPL", "NVDA", "META", "TSLA"];
   const [stockChartData, setStockChartData] = useState<any[]>([]);
   const [selectedSymbol, setSelectedSymbol] = useState(symbols[0]);
   const [aiAnalysisReports, setAiAnalysisReports] = useState<analysisReports[]>(
@@ -72,7 +72,7 @@ export const useStockData = () => {
     if (data) setAiAnalysisReports(data as analysisReports[]);
   };
   useEffect(() => {
-    fetchChartData();
+    if (selectedSymbol) fetchChartData();
   }, [selectedSymbol]);
   return {
     symbols,

@@ -1,8 +1,9 @@
 import { useEffect, useRef, useState } from "react";
+import { useStockData } from "./useStockData";
 
 export const useSocket = () => {
   const [prices, setPrices] = useState<Record<string, number>>({});
-  const symbols = ["AAPL", "GOOGL", "AMZN", "MSFT", "TSLA"];
+  const { symbols } = useStockData();
   const token = import.meta.env.VITE_FINNHUB_API_KEY;
   const socketInitialize = () => {
     if (!symbols.length) return;
