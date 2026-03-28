@@ -72,6 +72,7 @@ export const useStockData = () => {
     if (data) setAiAnalysisReports(data as analysisReports[]);
   };
   useEffect(() => {
+    console.log("qqwq");
     if (selectedSymbol) fetchChartData();
   }, [selectedSymbol]);
   return {
