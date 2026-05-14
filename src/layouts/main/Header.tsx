@@ -9,6 +9,9 @@ export const Header = () => {
         <a className="text-sm" href="/stock">
           주식
         </a>
+        <a className="text-sm" href="/youtube">
+          유튜브
+        </a>
       </div>
     </header>
   );

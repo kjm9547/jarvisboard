@@ -2,15 +2,18 @@ import { useEffect, useState } from "react";
 import { supabase } from "@/service/superbase";
 import { Badge } from "@/components/ui/badge";
 import { TodayNewsListCard } from "./TodayNewsListCard";
+import parse from "html-react-parser";
 interface News {
   id: number;
   title: string;
   summary: string;
   link: string;
+  description: string;
   created_at: string;
 }
 export const NewsCardContainer = () => {
   const [news, setNews] = useState<News[]>([]);
+  const [selectedNews, setSelectedNews] = useState<News | null>(null);
   const getTodayHotNewsTop5 = async () => {
     const today = new Date();
     const start = new Date(today.setHours(0, 0, 0, 0));
@@ -27,11 +30,17 @@ export const NewsCardContainer = () => {
     console.log("data", data);
     if (data) setNews(data as News[]);
   };
+  const handleSelcetedNews = (newsItem: News) => {
+    setSelectedNews(newsItem);
+  };
   // React 컴포넌트 내에서 호출
 
   useEffect(() => {
     getTodayHotNewsTop5();
   }, []);
+  useEffect(() => {
+    console.log("selectedNews", selectedNews);
+  }, [selectedNews]);
   return (
     <div className="min-h-screen bg-slate-50 p-6 md:p-10 text-slate-900">
       <div className="mb-12 border-b pb-6">
@@ -49,9 +58,33 @@ export const NewsCardContainer = () => {
           맥 미니 서버가 9시마다 요약하는 오늘의 핵심 뉴스
         </p>
       </div>
-
-      {/* 2. 카드 그리드 레이아웃 (반응형) */}
-      <TodayNewsListCard news={news} />
+      <div>
+        <div>
+          {selectedNews ? (
+            <div className="mb-6 p-4 border rounded-lg bg-white shadow-sm">
+              <h2 className="text-xl font-bold mb-2">{selectedNews.title}</h2>
+              <p className="text-gray-700 mb-4 h-800px whitespace-pre-wrap">
+                {selectedNews.summary}
+              </p>
+              {parse(selectedNews.description)}
+              <a
+                href={selectedNews.link}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="text-blue-500 hover:underline"
+              ></a>
+            </div>
+          ) : (
+            <div className="mb-6 p-4 border rounded-lg bg-white shadow-sm text-center text-gray-500">
+              뉴스를 선택하면 요약된 내용을 볼 수 있습니다.
+            </div>
+          )}
+        </div>
+        <TodayNewsListCard
+          news={news}
+          handleSelcetedNews={handleSelcetedNews}
+        />
+      </div>
     </div>
   );
 };
