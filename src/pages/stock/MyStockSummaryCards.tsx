@@ -20,20 +20,20 @@ export const MyStockSummaryCards = () => {
         const { icon: Icon, color } = summaryConfig[title];
         return (
           <Card
-            className="min-w-[250px] h-[110px] rounded-xl backdrop-blur-sm border-none shadow-none bg-white/5 border-0 ring-0 shadow-none"
+            className="min-w-[250px] h-[110px] rounded-xl backdrop-blur-sm bg-white/5 border-none ring-0 shadow-none"
             key={`${title}_key`}
           >
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-xs font-medium text-zinc-400">
+              <CardTitle className="text-xs font-medium text-muted-foreground">
                 {title}
               </CardTitle>
               <Icon className={`h-4 w-4 ${color}`} />
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold text-white">
-                {/* 나중에 데이터를 여기에 연결하세요 */}-
+              <div className="text-2xl font-bold text-foreground">
+                -
               </div>
-              <p className="text-[10px] text-zinc-500 mt-1">
+              <p className="text-[10px] text-muted-foreground mt-1">
                 지난 업데이트 대비 +0.0%
               </p>
             </CardContent>

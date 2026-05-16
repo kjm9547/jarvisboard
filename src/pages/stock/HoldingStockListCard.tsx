@@ -27,10 +27,10 @@ export const HoldingStockListCard = ({
   aiAnalysisReports,
 }: Props) => {
   return (
-    <Card className="min-w-[320px] flex-1 h-full rounded-2xl backdrop-blur-md border border-white/10 bg-white/5 shadow-2xl ring-0">
+    <Card className="min-w-[320px] flex-1 h-full rounded-2xl backdrop-blur-md bg-white/5 border-border ring-0 shadow-2xl">
       <CardHeader className="pb-2">
         <div className="flex items-center gap-4">
-          <CardTitle className="text-lg font-bold text-white/90">
+          <CardTitle className="text-lg font-bold text-foreground">
             내 포트폴리오
           </CardTitle>
           <Badge
@@ -43,15 +43,14 @@ export const HoldingStockListCard = ({
       </CardHeader>
 
       <CardContent>
-        {/* 헤더 섹션: 레이블 */}
-        <div className="grid grid-cols-4  border-b border-white/10 text-[11px] font-bold uppercase tracking-wider text-zinc-500 px-2">
+        <div className="grid grid-cols-4 border-b border-border text-[11px] font-bold uppercase tracking-wider text-muted-foreground px-2">
           <span>종목</span>
           <span className="text-right">AI 구매가</span>
           <span className="text-right">현재가</span>
           <span className="text-right">수익률</span>
         </div>
 
-        <ScrollArea className="h-[450px] pr-2">
+        <ScrollArea className="h-112.5 pr-2">
           <div className="space-y-1">
             {symbols.map((symbol) => {
               const currentPrice = prices ? prices[symbol] : 0;
@@ -75,21 +74,21 @@ export const HoldingStockListCard = ({
                 >
                   {/* 종목명 */}
                   <div className="flex flex-col">
-                    <span className="text-sm font-bold text-white group-hover:text-blue-400 transition-colors">
+                    <span className="text-sm font-bold text-foreground group-hover:text-blue-500 transition-colors">
                       {symbol}
                     </span>
-                    <span className="text-[10px] text-zinc-500 uppercase">
+                    <span className="text-[10px] text-muted-foreground uppercase">
                       Stock
                     </span>
                   </div>
 
                   {/* 구매가 */}
-                  <span className="text-sm text-right font-mono text-zinc-400">
+                  <span className="text-sm text-right font-mono text-muted-foreground">
                     ${buyPrice.toLocaleString()}
                   </span>
 
                   {/* 현재가 */}
-                  <span className="text-sm text-right font-mono font-bold text-white">
+                  <span className="text-sm text-right font-mono font-bold text-foreground">
                     ${currentPrice.toLocaleString()}
                   </span>
 
@@ -97,10 +96,10 @@ export const HoldingStockListCard = ({
                   <div
                     className={`flex items-center justify-end gap-1 text-sm font-bold ${
                       isZero
-                        ? "text-zinc-500"
+                        ? "text-muted-foreground"
                         : isPositive
-                          ? "text-emerald-400"
-                          : "text-rose-400"
+                          ? "text-emerald-500"
+                          : "text-red-500"
                     }`}
                   >
                     {isZero ? (

@@ -1,5 +1,4 @@
-import { AlertCircle, Calendar, TrendingDown, TrendingUp } from "lucide-react";
-import { useEffect, useState } from "react";
+import { useEffect } from "react";
 import { StockChartCard } from "./StockChartCard";
 import { MyStockSummaryCards } from "./MyStockSummaryCards";
 import { HoldingStockListCard } from "./HoldingStockListCard";
@@ -26,8 +25,8 @@ export const StockDashboard = () => {
   return (
     <div className="px-5 pt-5">
       <div className="flex items-start justify-center mb-5 flex-col gap-2">
-        <p className="text-xl font-bold text-amber-50 ">안녕하세요 주인님</p>
-        <p>투자 현황을 가져왔습니다.</p>
+        <h2 className="text-xl font-bold text-foreground">안녕하세요 주인님</h2>
+        <p className="text-sm text-muted-foreground">투자 현황을 가져왔습니다.</p>
       </div>
       <MyStockSummaryCards />
       <div className="flex h-auto gap-5 mb-5">
@@ -39,8 +38,10 @@ export const StockDashboard = () => {
         <AiAnalysticCard aiAnalysisReports={aiAnalysisReports} />
       </div>
 
-      <div className="h[500px] pt-10">
-        실시간 차트
+      <div className="mb-5">
+        <div className="flex items-center gap-2 mb-3">
+          <h3 className="text-base font-semibold text-foreground">실시간 차트</h3>
+        </div>
         <StockChartCard
           symbols={symbols}
           stockChartData={stockChartData}

@@ -1,9 +1,3 @@
-import { NewsCardContainer } from "./news/NewsCardContainer";
+import { NewsDashboard } from "./news/NewsDashboard";
 
-export const Index = () => {
-  return (
-    <div>
-      <NewsCardContainer />
-    </div>
-  );
-};
+export const Index = () => <NewsDashboard />;
