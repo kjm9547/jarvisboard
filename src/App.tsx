@@ -8,7 +8,6 @@ import YoutubeDashboard from "./pages/youtube/YouTubeDashboard";
 import { LoginPage } from "./pages/auth/LoginPage";
 import { ProtectedRoute } from "./components/ProtectedRoute";
 import { ExpenseDashboard } from "./pages/expense/ExpenseDashboard";
-
 function App() {
   return (
     <Routes>

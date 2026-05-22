@@ -1,9 +1,11 @@
-import { Wallet, TrendingDown, CalendarDays } from "lucide-react";
+import { Wallet, TrendingDown, CalendarDays, Plane } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { useExpenseData } from "@/hooks/useExpenseData";
+import { useTravelPeriods } from "@/hooks/useTravelPeriods";
 import { ExpenseUploadCard } from "./ExpenseUploadCard";
 import { ExpenseChartCard } from "./ExpenseChartCard";
 import { ExpenseListCard } from "./ExpenseListCard";
+import { TravelPeriodCard } from "./TravelPeriodCard";
 import { cn } from "@/lib/utils";
 
 const summaryConfig = [
@@ -31,6 +33,14 @@ const summaryConfig = [
     bar: "from-emerald-500/40 via-emerald-500/10 to-transparent",
     key: "income" as const,
   },
+  {
+    label: "여행 경비",
+    icon: Plane,
+    iconColor: "text-sky-500",
+    iconBg: "bg-sky-500/10",
+    bar: "from-sky-500/40 via-sky-500/10 to-transparent",
+    key: "travel" as const,
+  },
 ];
 
 export const ExpenseDashboard = () => {
@@ -46,10 +56,25 @@ export const ExpenseDashboard = () => {
     saveTransactions,
   } = useExpenseData();
 
+  const {
+    periods,
+    tags,
+    addPeriod,
+    removePeriod,
+    getTaggedPeriod,
+    tagTransactions,
+    untagTransactions,
+  } = useTravelPeriods();
+
+  const travelExpense = transactions
+    .filter((t) => t.type === "expense" && getTaggedPeriod(t.id))
+    .reduce((s, t) => s + Math.abs(t.amount), 0);
+
   const valueMap = {
     thisMonth: thisMonthExpense,
     total: totalExpense,
     income: totalIncome,
+    travel: travelExpense,
   };
 
   return (
@@ -112,9 +137,24 @@ export const ExpenseDashboard = () => {
         <div className="flex-1 h-px bg-border" />
       </div>
 
-      <div className="grid grid-cols-[1fr_1.5fr] gap-5">
+      <div className="grid grid-cols-[1fr_1fr_1.5fr] gap-5">
+        <TravelPeriodCard
+          periods={periods}
+          transactions={transactions}
+          tags={tags}
+          onAdd={addPeriod}
+          onRemove={removePeriod}
+        />
         <ExpenseUploadCard onSave={saveTransactions} />
-        <ExpenseListCard transactions={transactions} loading={loading} />
+        <ExpenseListCard
+          transactions={transactions}
+          loading={loading}
+          periods={periods}
+          tags={tags}
+          getTaggedPeriod={getTaggedPeriod}
+          tagTransactions={tagTransactions}
+          untagTransactions={untagTransactions}
+        />
       </div>
     </div>
   );
