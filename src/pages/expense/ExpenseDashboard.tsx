@@ -1,11 +1,14 @@
+import { useState } from "react";
 import { Wallet, TrendingDown, CalendarDays, Plane } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { useExpenseData } from "@/hooks/useExpenseData";
 import { useTravelPeriods } from "@/hooks/useTravelPeriods";
+import type { TravelPeriod } from "@/hooks/useTravelPeriods";
 import { ExpenseUploadCard } from "./ExpenseUploadCard";
 import { ExpenseChartCard } from "./ExpenseChartCard";
 import { ExpenseListCard } from "./ExpenseListCard";
 import { TravelPeriodCard } from "./TravelPeriodCard";
+import { TravelDetailView } from "./TravelDetailView";
 import { cn } from "@/lib/utils";
 
 const summaryConfig = [
@@ -67,6 +70,11 @@ export const ExpenseDashboard = () => {
     tagTransactions,
     untagTransactions,
   } = useTravelPeriods();
+
+  const [selectedPeriod, setSelectedPeriod] = useState<TravelPeriod | null>(null);
+  const periodTransactions = selectedPeriod
+    ? transactions.filter((t) => tags[t.id] === selectedPeriod.id)
+    : [];
 
   const travelExpense = transactions
     .filter((t) => t.type === "expense" && getTaggedPeriod(t.id))
@@ -146,25 +154,38 @@ export const ExpenseDashboard = () => {
         <div className="flex-1 h-px bg-border" />
       </div>
 
-      <div className="grid grid-cols-[1fr_1fr_1.5fr] gap-5">
+      <div className="grid grid-cols-[1.5fr_2.5fr] gap-5 items-start">
         <TravelPeriodCard
           periods={periods}
           transactions={transactions}
           tags={tags}
           onAdd={addPeriod}
           onRemove={removePeriod}
+          onSelect={setSelectedPeriod}
+          onTagTransactions={tagTransactions}
         />
-        <ExpenseUploadCard onSave={saveTransactions} />
-        <ExpenseListCard
-          transactions={transactions}
-          loading={loading}
-          periods={periods}
-          tags={tags}
-          getTaggedPeriod={getTaggedPeriod}
-          tagTransactions={tagTransactions}
-          untagTransactions={untagTransactions}
-        />
+        <div className="space-y-5">
+          <ExpenseUploadCard onSave={saveTransactions} />
+          <ExpenseListCard
+            transactions={transactions}
+            loading={loading}
+            periods={periods}
+            tags={tags}
+            getTaggedPeriod={getTaggedPeriod}
+            tagTransactions={tagTransactions}
+            untagTransactions={untagTransactions}
+          />
+        </div>
       </div>
+
+      {selectedPeriod && (
+        <TravelDetailView
+          period={selectedPeriod}
+          transactions={periodTransactions}
+          onClose={() => setSelectedPeriod(null)}
+          onUntag={(txId) => untagTransactions([txId])}
+        />
+      )}
     </div>
   );
 };
