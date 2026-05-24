@@ -24,6 +24,7 @@ dist-ssr
 *.sw?
 
 .env
+.venv/
 
 # Claude Code local settings (contains secrets)
 .claude/settings.local.json

@@ -56,6 +56,8 @@ export const ExpenseDashboard = () => {
     saveTransactions,
   } = useExpenseData();
 
+  const latestDate = transactions[0]?.transaction_at.slice(0, 10) ?? null;
+
   const {
     periods,
     tags,
@@ -80,9 +82,16 @@ export const ExpenseDashboard = () => {
   return (
     <div className="px-5 pt-5 pb-8">
       {/* 헤더 */}
-      <div className="flex flex-col gap-1 mb-6">
-        <h2 className="text-2xl font-bold text-foreground tracking-tight">지출 관리</h2>
-        <p className="text-sm text-muted-foreground">카카오페이 내역을 업로드하고 소비 패턴을 확인하세요</p>
+      <div className="flex items-end justify-between gap-2 mb-6">
+        <div className="flex flex-col gap-1">
+          <h2 className="text-2xl font-bold text-foreground tracking-tight">지출 관리</h2>
+          <p className="text-sm text-muted-foreground">카카오페이 내역을 업로드하고 소비 패턴을 확인하세요</p>
+        </div>
+        {!loading && latestDate && (
+          <p className="text-xs text-muted-foreground shrink-0">
+            마지막 데이터 <span className="font-medium text-foreground">{latestDate}</span>
+          </p>
+        )}
       </div>
 
       {/* 요약 카드 */}
