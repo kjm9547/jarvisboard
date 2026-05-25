@@ -1,5 +1,6 @@
-import { useState, useEffect, useCallback } from "react";
-import { supabase } from "@/service/superbase";
+import { useState, useEffect, useCallback, useRef } from "react";
+import { supabase } from "@/service/supabase";
+import type { Transaction } from "@/hooks/useExpenseData";
 
 export interface TravelPeriod {
   id: string;
@@ -13,6 +14,16 @@ export const useTravelPeriods = () => {
   const [periods, setPeriods] = useState<TravelPeriod[]>([]);
   const [tags, setTags] = useState<Record<string, string>>({}); // txId → periodId
   const [loading, setLoading] = useState(true);
+  const [pendingTag, setPendingTag] = useState<{ period: TravelPeriod; txIds: string[] } | null>(null);
+  const timerRef = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
+
+  // 30초 후 배너 자동 닫힘
+  useEffect(() => {
+    if (pendingTag) {
+      timerRef.current = setTimeout(() => setPendingTag(null), 30000);
+      return () => clearTimeout(timerRef.current);
+    }
+  }, [pendingTag]);
 
   const fetchAll = useCallback(async () => {
     setLoading(true);
@@ -80,6 +91,25 @@ export const useTravelPeriods = () => {
     return newPeriod;
   };
 
+  const updatePeriod = async (
+    id: string,
+    name: string,
+    startDate: string,
+    endDate: string,
+  ): Promise<void> => {
+    const trimmedName = name.trim() || "여행";
+    const { error } = await supabase
+      .from("travel_periods")
+      .update({ name: trimmedName, start_date: startDate, end_date: endDate })
+      .eq("id", id);
+
+    if (!error) {
+      setPeriods((prev) =>
+        prev.map((p) => p.id === id ? { ...p, name: trimmedName, startDate, endDate } : p)
+      );
+    }
+  };
+
   const removePeriod = async (id: string) => {
     await supabase.from("travel_periods").delete().eq("id", id);
     setPeriods((prev) => prev.filter((p) => p.id !== id));
@@ -90,10 +120,11 @@ export const useTravelPeriods = () => {
       });
       return next;
     });
+    if (pendingTag?.period.id === id) setPendingTag(null);
   };
 
+  // 1거래 1여행: 기존 태그 제거 후 새 태그 삽입
   const tagTransactions = async (txIds: string[], periodId: string) => {
-    // Optimistic update
     setTags((prev) => {
       const next = { ...prev };
       txIds.forEach((id) => { next[id] = periodId; });
@@ -103,14 +134,12 @@ export const useTravelPeriods = () => {
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) return;
 
+    await supabase.from("travel_tags").delete().in("tx_id", txIds).eq("user_id", user.id);
     const rows = txIds.map((txId) => ({ tx_id: txId, period_id: periodId, user_id: user.id }));
-    await supabase
-      .from("travel_tags")
-      .upsert(rows, { onConflict: "tx_id,period_id" });
+    await supabase.from("travel_tags").insert(rows);
   };
 
   const untagTransactions = async (txIds: string[]) => {
-    // Optimistic update
     setTags((prev) => {
       const next = { ...prev };
       txIds.forEach((id) => { delete next[id]; });
@@ -128,16 +157,54 @@ export const useTravelPeriods = () => {
     return periods.find((p) => d >= p.startDate && d <= p.endDate);
   };
 
+  // 날짜 범위 내 미태깅 거래가 있는 첫 번째 여행에 자동 태깅 배너를 띄운다.
+  // newPeriod: addPeriod 직후 React 상태 반영 전에 호출할 때 명시적으로 전달
+  const triggerAutoTag = (transactions: Transaction[], newPeriod?: TravelPeriod) => {
+    const periodsToCheck = newPeriod ? [newPeriod, ...periods] : periods;
+    for (const period of periodsToCheck) {
+      const untagged = transactions.filter((t) => {
+        const d = t.transaction_at.slice(0, 10);
+        return (
+          t.type === "expense" &&
+          d >= period.startDate &&
+          d <= period.endDate &&
+          !tags[t.id]
+        );
+      });
+      if (untagged.length > 0) {
+        setPendingTag({ period, txIds: untagged.map((t) => t.id) });
+        return;
+      }
+    }
+  };
+
+  const confirmPendingTag = () => {
+    if (!pendingTag) return;
+    tagTransactions(pendingTag.txIds, pendingTag.period.id);
+    clearTimeout(timerRef.current);
+    setPendingTag(null);
+  };
+
+  const dismissPendingTag = () => {
+    clearTimeout(timerRef.current);
+    setPendingTag(null);
+  };
+
   return {
     periods,
     tags,
     loading,
+    pendingTag,
     addPeriod,
+    updatePeriod,
     removePeriod,
     tagTransactions,
     untagTransactions,
     getTaggedPeriod,
     getDateRangePeriod,
+    triggerAutoTag,
+    confirmPendingTag,
+    dismissPendingTag,
     refetch: fetchAll,
   };
 };

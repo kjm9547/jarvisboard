@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { Wallet, TrendingDown, CalendarDays, Plane } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { useExpenseData } from "@/hooks/useExpenseData";
+import { useExpenseData, type ParsedRow } from "@/hooks/useExpenseData";
 import { useTravelPeriods } from "@/hooks/useTravelPeriods";
 import type { TravelPeriod } from "@/hooks/useTravelPeriods";
 import { ExpenseUploadCard } from "./ExpenseUploadCard";
@@ -64,11 +64,16 @@ export const ExpenseDashboard = () => {
   const {
     periods,
     tags,
+    pendingTag,
     addPeriod,
+    updatePeriod,
     removePeriod,
     getTaggedPeriod,
     tagTransactions,
     untagTransactions,
+    triggerAutoTag,
+    confirmPendingTag,
+    dismissPendingTag,
   } = useTravelPeriods();
 
   const [selectedPeriod, setSelectedPeriod] = useState<TravelPeriod | null>(null);
@@ -85,6 +90,15 @@ export const ExpenseDashboard = () => {
     total: totalExpense,
     income: totalIncome,
     travel: travelExpense,
+  };
+
+  // 업로드 완료 후 자동 태깅 2차 트리거
+  const handleSave = async (rows: ParsedRow[]) => {
+    const result = await saveTransactions(rows);
+    if (result.inserted > 0 && periods.length > 0) {
+      triggerAutoTag(result.fresh);
+    }
+    return { inserted: result.inserted, skipped: result.skipped };
   };
 
   return (
@@ -134,7 +148,7 @@ export const ExpenseDashboard = () => {
         ))}
       </div>
 
-      {/* 섹션 구분 */}
+      {/* 통계 섹션 */}
       <div className="flex items-center gap-2 mb-3">
         <h3 className="text-sm font-semibold text-muted-foreground uppercase tracking-wider">통계</h3>
         <div className="flex-1 h-px bg-border" />
@@ -148,7 +162,7 @@ export const ExpenseDashboard = () => {
         />
       </div>
 
-      {/* 섹션 구분 */}
+      {/* 내역 섹션 */}
       <div className="flex items-center gap-2 mb-3">
         <h3 className="text-sm font-semibold text-muted-foreground uppercase tracking-wider">내역</h3>
         <div className="flex-1 h-px bg-border" />
@@ -159,13 +173,17 @@ export const ExpenseDashboard = () => {
           periods={periods}
           transactions={transactions}
           tags={tags}
+          pendingTag={pendingTag}
           onAdd={addPeriod}
           onRemove={removePeriod}
+          onUpdate={updatePeriod}
           onSelect={setSelectedPeriod}
-          onTagTransactions={tagTransactions}
+          onTriggerAutoTag={triggerAutoTag}
+          onConfirmPendingTag={confirmPendingTag}
+          onDismissPendingTag={dismissPendingTag}
         />
         <div className="space-y-5">
-          <ExpenseUploadCard onSave={saveTransactions} />
+          <ExpenseUploadCard onSave={handleSave} />
           <ExpenseListCard
             transactions={transactions}
             loading={loading}

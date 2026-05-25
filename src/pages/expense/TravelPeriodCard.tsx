@@ -1,8 +1,11 @@
-import { useState, useEffect, useRef } from "react";
+import { useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Plane, Plus, Trash2, CalendarRange, ChevronRight, CheckCircle2 } from "lucide-react";
+import {
+  Plane, Plus, Trash2, CalendarRange, ChevronRight,
+  CheckCircle2, Pencil, Check, X,
+} from "lucide-react";
 import { cn } from "@/lib/utils";
 import { getCategory, CATEGORY_RULES, type Category } from "@/lib/categoryRules";
 import type { TravelPeriod } from "@/hooks/useTravelPeriods";
@@ -12,31 +15,41 @@ interface Props {
   periods: TravelPeriod[];
   transactions: Transaction[];
   tags: Record<string, string>;
+  pendingTag: { period: TravelPeriod; txIds: string[] } | null;
   onAdd: (name: string, startDate: string, endDate: string) => Promise<TravelPeriod | null>;
   onRemove: (id: string) => void;
+  onUpdate: (id: string, name: string, startDate: string, endDate: string) => Promise<void>;
   onSelect: (period: TravelPeriod) => void;
-  onTagTransactions: (txIds: string[], periodId: string) => void;
+  onTriggerAutoTag: (transactions: Transaction[], newPeriod?: TravelPeriod) => void;
+  onConfirmPendingTag: () => void;
+  onDismissPendingTag: () => void;
 }
 
 const fmt = (d: string) => d.slice(5).replace("-", "/");
 
 export const TravelPeriodCard = ({
-  periods, transactions, tags, onAdd, onRemove, onSelect, onTagTransactions,
+  periods, transactions, tags, pendingTag,
+  onAdd, onRemove, onUpdate, onSelect,
+  onTriggerAutoTag, onConfirmPendingTag, onDismissPendingTag,
 }: Props) => {
+  // 폼 아코디언
+  const [formOpen, setFormOpen] = useState(false);
   const [name, setName] = useState("");
   const [startDate, setStartDate] = useState("");
   const [endDate, setEndDate] = useState("");
   const [error, setError] = useState("");
   const [adding, setAdding] = useState(false);
-  const [pendingTag, setPendingTag] = useState<{ period: TravelPeriod; txIds: string[] } | null>(null);
-  const timerRef = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
 
-  useEffect(() => {
-    if (pendingTag) {
-      timerRef.current = setTimeout(() => setPendingTag(null), 30000);
-      return () => clearTimeout(timerRef.current);
-    }
-  }, [pendingTag]);
+  // 인라인 삭제 확인
+  const [deletingId, setDeletingId] = useState<string | null>(null);
+
+  // 인라인 편집
+  const [editingId, setEditingId] = useState<string | null>(null);
+  const [editName, setEditName] = useState("");
+  const [editStart, setEditStart] = useState("");
+  const [editEnd, setEditEnd] = useState("");
+  const [editError, setEditError] = useState("");
+  const [saving, setSaving] = useState(false);
 
   const handleAdd = async () => {
     if (!startDate || !endDate) {
@@ -57,22 +70,37 @@ export const TravelPeriodCard = ({
       setStartDate("");
       setEndDate("");
       setError("");
-
-      const untagged = transactions.filter((t) => {
-        const d = t.transaction_at.slice(0, 10);
-        return d >= newPeriod.startDate && d <= newPeriod.endDate && !tags[t.id];
-      });
-
-      if (untagged.length > 0) {
-        setPendingTag({ period: newPeriod, txIds: untagged.map((t) => t.id) });
-      }
+      setFormOpen(false);
+      onTriggerAutoTag(transactions, newPeriod);
     }
   };
 
-  const confirmAutoTag = () => {
-    if (!pendingTag) return;
-    onTagTransactions(pendingTag.txIds, pendingTag.period.id);
-    setPendingTag(null);
+  const startEdit = (p: TravelPeriod) => {
+    setEditingId(p.id);
+    setEditName(p.name);
+    setEditStart(p.startDate);
+    setEditEnd(p.endDate);
+    setEditError("");
+  };
+
+  const cancelEdit = () => {
+    setEditingId(null);
+    setEditError("");
+  };
+
+  const handleUpdate = async () => {
+    if (!editStart || !editEnd) {
+      setEditError("시작일과 종료일을 모두 입력해주세요");
+      return;
+    }
+    if (editStart > editEnd) {
+      setEditError("시작일이 종료일보다 늦을 수 없습니다");
+      return;
+    }
+    setSaving(true);
+    await onUpdate(editingId!, editName, editStart, editEnd);
+    setSaving(false);
+    setEditingId(null);
   };
 
   const getPeriodStats = (p: TravelPeriod) => {
@@ -105,37 +133,7 @@ export const TravelPeriodCard = ({
         </CardTitle>
       </CardHeader>
 
-      <CardContent className="space-y-4">
-        {/* 입력 폼 */}
-        <div className="space-y-2">
-          <Input
-            placeholder="여행 이름 (예: 도쿄 여행)"
-            value={name}
-            onChange={(e) => setName(e.target.value)}
-            className="bg-white/5 border-border text-sm h-8"
-          />
-          <div className="flex gap-2 items-center">
-            <Input
-              type="date"
-              value={startDate}
-              onChange={(e) => { setStartDate(e.target.value); setError(""); }}
-              className="bg-white/5 border-border text-sm h-8 flex-1"
-            />
-            <span className="text-xs text-muted-foreground shrink-0">~</span>
-            <Input
-              type="date"
-              value={endDate}
-              onChange={(e) => { setEndDate(e.target.value); setError(""); }}
-              className="bg-white/5 border-border text-sm h-8 flex-1"
-            />
-          </div>
-          {error && <p className="text-xs text-red-500">{error}</p>}
-          <Button onClick={handleAdd} size="sm" className="w-full h-8 text-xs gap-1.5" disabled={adding}>
-            <Plus className="w-3.5 h-3.5" />
-            {adding ? "추가 중..." : "기간 추가"}
-          </Button>
-        </div>
-
+      <CardContent className="space-y-3">
         {/* 자동 태깅 확인 배너 */}
         {pendingTag && (
           <div className="rounded-xl bg-sky-500/10 border border-sky-500/30 px-3 py-2.5 flex items-start gap-2">
@@ -144,17 +142,19 @@ export const TravelPeriodCard = ({
               <p className="text-xs text-sky-400 font-medium">
                 {pendingTag.txIds.length}건의 거래가 이 기간에 있어요
               </p>
-              <p className="text-[10px] text-muted-foreground mt-0.5">여행 경비로 추가하시겠어요?</p>
+              <p className="text-[10px] text-muted-foreground mt-0.5">
+                {pendingTag.period.name}에 여행 경비로 추가할까요?
+              </p>
             </div>
             <div className="flex gap-1 shrink-0">
               <button
-                onClick={confirmAutoTag}
+                onClick={onConfirmPendingTag}
                 className="text-[10px] font-medium text-sky-400 hover:text-sky-300 px-2 py-1 rounded-md hover:bg-sky-500/10 transition-colors"
               >
                 추가
               </button>
               <button
-                onClick={() => setPendingTag(null)}
+                onClick={onDismissPendingTag}
                 className="text-[10px] text-muted-foreground hover:text-foreground px-2 py-1 rounded-md hover:bg-white/5 transition-colors"
               >
                 닫기
@@ -172,6 +172,57 @@ export const TravelPeriodCard = ({
         ) : (
           <div className="space-y-2">
             {periods.map((p) => {
+              const isEditing = editingId === p.id;
+              const isDeleting = deletingId === p.id;
+
+              if (isEditing) {
+                return (
+                  <div key={p.id} className="rounded-xl bg-sky-500/5 border border-sky-500/30 px-3 py-2.5 space-y-2">
+                    <Input
+                      value={editName}
+                      onChange={(e) => setEditName(e.target.value)}
+                      placeholder="여행 이름"
+                      className="bg-white/5 border-border text-sm h-7"
+                    />
+                    <div className="flex gap-2 items-center">
+                      <Input
+                        type="date"
+                        value={editStart}
+                        onChange={(e) => { setEditStart(e.target.value); setEditError(""); }}
+                        className="bg-white/5 border-border text-xs h-7 flex-1"
+                      />
+                      <span className="text-xs text-muted-foreground shrink-0">~</span>
+                      <Input
+                        type="date"
+                        value={editEnd}
+                        onChange={(e) => { setEditEnd(e.target.value); setEditError(""); }}
+                        className="bg-white/5 border-border text-xs h-7 flex-1"
+                      />
+                    </div>
+                    {editError && <p className="text-[10px] text-red-500">{editError}</p>}
+                    <div className="flex gap-1.5">
+                      <Button
+                        size="sm"
+                        className="h-7 text-xs flex-1 gap-1"
+                        onClick={handleUpdate}
+                        disabled={saving}
+                      >
+                        <Check className="w-3 h-3" />
+                        {saving ? "저장 중..." : "저장"}
+                      </Button>
+                      <Button
+                        size="sm"
+                        variant="ghost"
+                        className="h-7 text-xs px-2"
+                        onClick={cancelEdit}
+                      >
+                        <X className="w-3 h-3" />
+                      </Button>
+                    </div>
+                  </div>
+                );
+              }
+
               const { count, total, catAmounts, days } = getPeriodStats(p);
               const isOngoing = today >= p.startDate && today <= p.endDate;
               const catTotal = Object.values(catAmounts).reduce((s, v) => s + (v ?? 0), 0);
@@ -180,9 +231,37 @@ export const TravelPeriodCard = ({
                 .filter(([, v]) => v > 0)
                 .sort(([, a], [, b]) => b - a);
 
+              if (isDeleting) {
+                return (
+                  <div key={p.id} className="rounded-xl bg-red-500/5 border border-red-500/30 px-3 py-2.5">
+                    <p className="text-xs text-foreground mb-2">
+                      <span className="font-medium">{p.name}</span>을 삭제하면
+                      {count > 0 && <span className="text-red-400"> {count}건의 태깅도 함께 사라집니다.</span>}
+                    </p>
+                    <div className="flex gap-1.5">
+                      <Button
+                        size="sm"
+                        variant="destructive"
+                        className="h-7 text-xs flex-1"
+                        onClick={() => { onRemove(p.id); setDeletingId(null); }}
+                      >
+                        삭제
+                      </Button>
+                      <Button
+                        size="sm"
+                        variant="ghost"
+                        className="h-7 text-xs flex-1"
+                        onClick={() => setDeletingId(null)}
+                      >
+                        취소
+                      </Button>
+                    </div>
+                  </div>
+                );
+              }
+
               return (
                 <div key={p.id} className="rounded-xl bg-sky-500/5 border border-sky-500/20 overflow-hidden">
-                  {/* 카테고리 컬러 바 */}
                   {catTotal > 0 && (
                     <div className="flex h-1">
                       {catEntries.map(([cat, amount]) => (
@@ -227,8 +306,16 @@ export const TravelPeriodCard = ({
                           <ChevronRight className="w-3.5 h-3.5" />
                         </button>
                         <button
-                          onClick={() => onRemove(p.id)}
+                          onClick={() => startEdit(p)}
+                          className="p-1 rounded-md text-muted-foreground hover:text-sky-400 hover:bg-sky-500/10 transition-colors"
+                          title="수정"
+                        >
+                          <Pencil className="w-3 h-3" />
+                        </button>
+                        <button
+                          onClick={() => setDeletingId(p.id)}
                           className="p-1 rounded-md text-muted-foreground hover:text-red-500 hover:bg-red-500/10 transition-colors"
+                          title="삭제"
                         >
                           <Trash2 className="w-3.5 h-3.5" />
                         </button>
@@ -249,7 +336,9 @@ export const TravelPeriodCard = ({
                       </div>
                     ) : (
                       <p className="mt-1.5 text-[10px] text-muted-foreground/60">
-                        거래 내역에서 여행 경비를 선택해주세요
+                        {transactions.length === 0
+                          ? "내역을 먼저 업로드하면 자동으로 묶어드려요"
+                          : "이 기간에 해당하는 지출이 없어요"}
                       </p>
                     )}
                   </div>
@@ -257,6 +346,64 @@ export const TravelPeriodCard = ({
               );
             })}
           </div>
+        )}
+
+        {/* 폼 아코디언 */}
+        {formOpen ? (
+          <div className="space-y-2 pt-1">
+            <Input
+              placeholder="여행 이름 (예: 도쿄 여행)"
+              value={name}
+              onChange={(e) => setName(e.target.value)}
+              className="bg-white/5 border-border text-sm h-8"
+              autoFocus
+            />
+            <div className="flex gap-2 items-center">
+              <Input
+                type="date"
+                value={startDate}
+                onChange={(e) => { setStartDate(e.target.value); setError(""); }}
+                className="bg-white/5 border-border text-sm h-8 flex-1"
+              />
+              <span className="text-xs text-muted-foreground shrink-0">~</span>
+              <Input
+                type="date"
+                value={endDate}
+                onChange={(e) => { setEndDate(e.target.value); setError(""); }}
+                className="bg-white/5 border-border text-sm h-8 flex-1"
+              />
+            </div>
+            {error && <p className="text-xs text-red-500">{error}</p>}
+            <div className="flex gap-1.5">
+              <Button
+                onClick={handleAdd}
+                size="sm"
+                className="h-8 text-xs gap-1.5 flex-1"
+                disabled={adding}
+              >
+                <Plus className="w-3.5 h-3.5" />
+                {adding ? "추가 중..." : "추가"}
+              </Button>
+              <Button
+                variant="ghost"
+                size="sm"
+                className="h-8 text-xs px-3"
+                onClick={() => { setFormOpen(false); setError(""); }}
+              >
+                취소
+              </Button>
+            </div>
+          </div>
+        ) : (
+          <Button
+            variant="outline"
+            size="sm"
+            className="w-full h-8 text-xs gap-1.5 border-dashed border-sky-500/30 text-muted-foreground hover:text-sky-400 hover:border-sky-500/50"
+            onClick={() => setFormOpen(true)}
+          >
+            <Plus className="w-3.5 h-3.5" />
+            새 여행 추가
+          </Button>
         )}
       </CardContent>
     </Card>

@@ -4,7 +4,7 @@ import { MyStockSummaryCards } from "./MyStockSummaryCards";
 import { HoldingStockListCard } from "./HoldingStockListCard";
 import { useStockData } from "@/hooks/useStockData";
 import { useSocket } from "@/hooks/useSocket";
-import { AiAnalysticCard } from "./AiAnalysticCard";
+import { AiAnalyticsCard } from "./AiAnalyticsCard";
 import { Badge } from "@/components/ui/badge";
 import { Activity, TrendingUp } from "lucide-react";
 
@@ -101,7 +101,7 @@ export const StockDashboard = () => {
           prices={prices}
           aiAnalysisReports={aiAnalysisReports}
         />
-        <AiAnalysticCard aiAnalysisReports={aiAnalysisReports} />
+        <AiAnalyticsCard aiAnalysisReports={aiAnalysisReports} />
       </div>
 
       {/* 실시간 차트 섹션 */}

@@ -1,4 +1,4 @@
-import { supabase } from "@/service/superbase";
+import { supabase } from "@/service/supabase";
 import { useEffect, useState } from "react";
 
 interface StockFetchResponse {
@@ -36,7 +36,10 @@ export const useStockData = () => {
   };
   const fetchChartData = async () => {
     const apiKey = import.meta.env.VITE_MASSIVE_API_KEY;
-    const url = `https://api.polygon.io/v2/aggs/ticker/${selectedSymbol}/range/1/minute/2026-03-23/2026-03-24?adjusted=true&sort=asc&apiKey=${apiKey}`;
+    const today = new Date();
+    const toDate = today.toISOString().slice(0, 10);
+    const fromDate = new Date(today.getTime() - 86400000).toISOString().slice(0, 10);
+    const url = `https://api.polygon.io/v2/aggs/ticker/${selectedSymbol}/range/1/minute/${fromDate}/${toDate}?adjusted=true&sort=asc&apiKey=${apiKey}`;
     const response = await fetch(url);
     const data = await response.json();
 
@@ -52,27 +55,18 @@ export const useStockData = () => {
     setStockChartData(chartData);
   };
   const getAnalysisReports = async () => {
-    const today = new Date();
-    const start = new Date("2026-03-23");
-    const end = new Date("2026-03-24");
+    const today = new Date().toISOString().slice(0, 10);
+    const tomorrow = new Date(Date.now() + 86400000).toISOString().slice(0, 10);
 
-    const targetDate = "2026-03-23";
-
-    const nextDate = new Date(targetDate);
-    nextDate.setDate(nextDate.getDate() + 1);
-
-    const nextDateStr = nextDate.toISOString().split("T")[0];
-
-    const { data, error } = await supabase
+    const { data } = await supabase
       .from("analysis_reports")
       .select("*")
-      .gte("created_at", targetDate)
-      .lt("created_at", nextDateStr)
+      .gte("created_at", today)
+      .lt("created_at", tomorrow)
       .order("created_at", { ascending: false });
     if (data) setAiAnalysisReports(data as analysisReports[]);
   };
   useEffect(() => {
-    console.log("qqwq");
     if (selectedSymbol) fetchChartData();
   }, [selectedSymbol]);
   return {

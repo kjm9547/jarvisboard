@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { Navigate, Outlet } from "react-router-dom";
-import { supabase } from "@/service/superbase";
+import { supabase } from "@/service/supabase";
 import type { Session } from "@supabase/supabase-js";
 
 export const ProtectedRoute = () => {

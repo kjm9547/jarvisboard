@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { supabase } from "@/service/superbase";
+import { supabase } from "@/service/supabase";
 
 export interface DevNewsItem {
   id: string;

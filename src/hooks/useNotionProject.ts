@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { supabase } from "@/service/superbase";
+import { supabase } from "@/service/supabase";
 
 export interface ProjectTask {
   id: string;

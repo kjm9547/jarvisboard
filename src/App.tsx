@@ -1,5 +1,4 @@
 import "./App.css";
-import { NewsCardContainer } from "./pages/main/news/NewsCardContainer";
 import { Index } from "./pages/main";
 import { Route, Routes } from "react-router-dom";
 import { StockDashboard } from "./pages/stock/StockDashboard";

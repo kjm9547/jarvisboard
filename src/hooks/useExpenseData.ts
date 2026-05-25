@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { supabase } from "@/service/superbase";
+import { supabase } from "@/service/supabase";
 
 export interface Transaction {
   id: string;
@@ -48,20 +48,22 @@ export const useExpenseData = () => {
   const [transactions, setTransactions] = useState<Transaction[]>([]);
   const [loading, setLoading] = useState(true);
 
-  const fetchTransactions = async () => {
+  const fetchTransactions = async (): Promise<Transaction[]> => {
     setLoading(true);
     const { data, error } = await supabase
       .from("transactions")
       .select("*")
       .order("transaction_at", { ascending: false });
 
-    if (!error && data) setTransactions(data as Transaction[]);
+    const rows = (!error && data) ? (data as Transaction[]) : [];
+    setTransactions(rows);
     setLoading(false);
+    return rows;
   };
 
-  const saveTransactions = async (rows: ParsedRow[]): Promise<{ inserted: number; skipped: number }> => {
+  const saveTransactions = async (rows: ParsedRow[]): Promise<{ inserted: number; skipped: number; fresh: Transaction[] }> => {
     const { data: { user } } = await supabase.auth.getUser();
-    if (!user) return { inserted: 0, skipped: 0 };
+    if (!user) return { inserted: 0, skipped: 0, fresh: [] };
 
     const payload = rows.map((r) => ({ ...r, user_id: user.id }));
 
@@ -78,8 +80,8 @@ export const useExpenseData = () => {
 
     const inserted = data?.length ?? 0;
     const skipped = rows.length - inserted;
-    await fetchTransactions();
-    return { inserted, skipped };
+    const fresh = await fetchTransactions();
+    return { inserted, skipped, fresh };
   };
 
   useEffect(() => {

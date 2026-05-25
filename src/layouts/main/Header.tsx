@@ -3,7 +3,7 @@ import { Moon, Sun, LogOut } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useTheme } from "@/hooks/useTheme";
 import { cn } from "@/lib/utils";
-import { supabase } from "@/service/superbase";
+import { supabase } from "@/service/supabase";
 
 const navItems = [
   { label: "뉴스", to: "/" },

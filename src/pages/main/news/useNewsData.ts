@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
-import { supabase } from "@/service/superbase";
+import { supabase } from "@/service/supabase";
 import type { News } from "./types";
 
 export const useNewsData = () => {

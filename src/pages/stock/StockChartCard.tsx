@@ -3,13 +3,20 @@ import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { cn } from "@/lib/utils";
 
-type props = {
+interface Props {
   symbols: string[];
-  stockChartData: any[];
+  stockChartData: {
+    time: string;
+    open: number;
+    high: number;
+    low: number;
+    close: number;
+    volume: string;
+  }[];
   selectedSymbol: string;
   handleSelect: (symbol: string) => void;
   prices?: Record<string, number>;
-};
+}
 
 export const StockChartCard = ({
   symbols,
@@ -17,7 +24,7 @@ export const StockChartCard = ({
   selectedSymbol,
   handleSelect,
   prices,
-}: props) => {
+}: Props) => {
   const currentPrice = prices?.[selectedSymbol];
 
   return (

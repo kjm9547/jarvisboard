@@ -4,7 +4,7 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { ArrowDownRight, ArrowUpRight, Minus } from "lucide-react";
 import { cn } from "@/lib/utils";
 
-type Props = {
+interface Props {
   symbols: string[];
   prices?: Record<string, number>;
   aiAnalysisReports?: {
@@ -20,7 +20,7 @@ type Props = {
     processed_at: string;
     current_price: number;
   }[];
-};
+}
 
 const symbolColors: Record<string, { bg: string; text: string }> = {
   AAPL: { bg: "bg-blue-500/15", text: "text-blue-400" },
