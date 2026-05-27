@@ -10,6 +10,7 @@ const navItems = [
   { label: "주식", to: "/stock" },
   { label: "유튜브", to: "/youtube" },
   { label: "지출", to: "/expense" },
+  { label: "목표", to: "/goals" },
 ];
 
 export const Header = () => {

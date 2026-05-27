@@ -7,6 +7,7 @@ import YoutubeDashboard from "./pages/youtube/YouTubeDashboard";
 import { LoginPage } from "./pages/auth/LoginPage";
 import { ProtectedRoute } from "./components/ProtectedRoute";
 import { ExpenseDashboard } from "./pages/expense/ExpenseDashboard";
+import { GoalsDashboard } from "./pages/goals/GoalsDashboard";
 function App() {
   return (
     <Routes>
@@ -17,6 +18,7 @@ function App() {
           <Route path="/stock" element={<StockDashboard />} />
           <Route path="/youtube" element={<YoutubeDashboard />} />
           <Route path="/expense" element={<ExpenseDashboard />} />
+          <Route path="/goals" element={<GoalsDashboard />} />
         </Route>
       </Route>
     </Routes>
