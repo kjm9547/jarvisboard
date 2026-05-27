@@ -1,6 +1,7 @@
 import { useState } from "react";
-import { Wallet, TrendingDown, CalendarDays, Plane } from "lucide-react";
+import { Wallet, TrendingDown, CalendarDays, Plane, ChevronRight } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
 import { useExpenseData, type ParsedRow } from "@/hooks/useExpenseData";
 import { useTravelPeriods } from "@/hooks/useTravelPeriods";
 import type { TravelPeriod } from "@/hooks/useTravelPeriods";
@@ -10,6 +11,8 @@ import { ExpenseListCard } from "./ExpenseListCard";
 import { TravelPeriodCard } from "./TravelPeriodCard";
 import { TravelDetailView } from "./TravelDetailView";
 import { cn } from "@/lib/utils";
+
+const fmtDate = (d: string) => d.slice(5).replace("-", "/");
 
 const summaryConfig = [
   {
@@ -85,6 +88,14 @@ export const ExpenseDashboard = () => {
     .filter((t) => t.type === "expense" && getTaggedPeriod(t.id))
     .reduce((s, t) => s + Math.abs(t.amount), 0);
 
+  const todayStr = new Date().toISOString().slice(0, 10);
+  const activePeriod = periods.find((p) => todayStr >= p.startDate && todayStr <= p.endDate) ?? null;
+  const activePeriodExpense = activePeriod
+    ? transactions
+        .filter((t) => t.type === "expense" && tags[t.id] === activePeriod.id)
+        .reduce((s, t) => s + Math.abs(t.amount), 0)
+    : 0;
+
   const valueMap = {
     thisMonth: thisMonthExpense,
     total: totalExpense,
@@ -115,6 +126,38 @@ export const ExpenseDashboard = () => {
           </p>
         )}
       </div>
+
+      {/* 진행 중인 여행 배너 */}
+      {activePeriod && (
+        <div className="mb-6 rounded-2xl bg-linear-to-r from-sky-500/15 to-sky-500/5 border border-sky-500/30 px-5 py-3.5 flex items-center gap-4">
+          <div className="rounded-xl bg-sky-500/20 p-2 shrink-0">
+            <Plane className="w-4 h-4 text-sky-400" />
+          </div>
+          <div className="flex-1 min-w-0">
+            <div className="flex items-center gap-2">
+              <p className="text-sm font-semibold text-foreground">{activePeriod.name}</p>
+              <span className="text-[9px] font-bold bg-sky-500/20 text-sky-400 px-1.5 py-0.5 rounded-full">
+                진행 중
+              </span>
+            </div>
+            <p className="text-xs text-muted-foreground mt-0.5">
+              {fmtDate(activePeriod.startDate)} ~ {fmtDate(activePeriod.endDate)}
+              {activePeriodExpense > 0 && (
+                <> · 현재 <span className="text-sky-400 font-medium">{activePeriodExpense.toLocaleString()}원</span> 지출</>
+              )}
+            </p>
+          </div>
+          <Button
+            size="sm"
+            variant="ghost"
+            className="shrink-0 h-8 text-xs gap-1 text-sky-400 hover:text-sky-300 hover:bg-sky-500/10"
+            onClick={() => setSelectedPeriod(activePeriod)}
+          >
+            상세보기
+            <ChevronRight className="w-3 h-3" />
+          </Button>
+        </div>
+      )}
 
       {/* 요약 카드 */}
       <div className="flex flex-wrap gap-3 mb-6">

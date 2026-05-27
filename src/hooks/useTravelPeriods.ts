@@ -69,14 +69,21 @@ export const useTravelPeriods = () => {
     name: string,
     startDate: string,
     endDate: string,
+    budget?: number,
   ): Promise<TravelPeriod | null> => {
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) return null;
 
     const { data, error } = await supabase
       .from("travel_periods")
-      .insert({ name: name.trim() || "여행", start_date: startDate, end_date: endDate, user_id: user.id })
-      .select("id, name, start_date, end_date")
+      .insert({
+        name: name.trim() || "여행",
+        start_date: startDate,
+        end_date: endDate,
+        user_id: user.id,
+        ...(budget != null ? { budget } : {}),
+      })
+      .select("id, name, start_date, end_date, budget")
       .single();
 
     if (error || !data) return null;
@@ -86,6 +93,7 @@ export const useTravelPeriods = () => {
       name: data.name,
       startDate: data.start_date,
       endDate: data.end_date,
+      budget: data.budget ?? undefined,
     };
     setPeriods((prev) => [newPeriod, ...prev]);
     return newPeriod;
@@ -96,16 +104,24 @@ export const useTravelPeriods = () => {
     name: string,
     startDate: string,
     endDate: string,
+    budget?: number,
   ): Promise<void> => {
     const trimmedName = name.trim() || "여행";
     const { error } = await supabase
       .from("travel_periods")
-      .update({ name: trimmedName, start_date: startDate, end_date: endDate })
+      .update({
+        name: trimmedName,
+        start_date: startDate,
+        end_date: endDate,
+        budget: budget ?? null,
+      })
       .eq("id", id);
 
     if (!error) {
       setPeriods((prev) =>
-        prev.map((p) => p.id === id ? { ...p, name: trimmedName, startDate, endDate } : p)
+        prev.map((p) =>
+          p.id === id ? { ...p, name: trimmedName, startDate, endDate, budget } : p
+        )
       );
     }
   };
