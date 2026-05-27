@@ -115,7 +115,7 @@ export const ExpenseDashboard = () => {
   };
 
   return (
-    <div className="px-5 pt-5 pb-8">
+    <div className="px-3 pt-4 pb-8 md:px-5 md:pt-5">
       {/* 헤더 */}
       <div className="flex items-end justify-between gap-2 mb-6">
         <div className="flex flex-col gap-1">
@@ -199,7 +199,7 @@ export const ExpenseDashboard = () => {
         <div className="flex-1 h-px bg-border" />
       </div>
 
-      <div className="grid grid-cols-[1.5fr_1fr] gap-5 mb-6">
+      <div className="grid grid-cols-1 lg:grid-cols-[1.5fr_1fr] gap-5 mb-6">
         <ExpenseChartCard
           dailyStats={dailyStats}
           weeklyStats={weeklyStats}
@@ -218,7 +218,7 @@ export const ExpenseDashboard = () => {
         <div className="flex-1 h-px bg-border" />
       </div>
 
-      <div className="grid grid-cols-[1.5fr_2.5fr] gap-5 items-start">
+      <div className="grid grid-cols-1 lg:grid-cols-[1.5fr_2.5fr] gap-5 items-start">
         <TravelPeriodCard
           periods={periods}
           transactions={transactions}

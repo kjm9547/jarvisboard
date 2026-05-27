@@ -87,7 +87,7 @@ export const TravelDetailView = ({ period, transactions, onClose, onUntag, onUpd
   return (
     <>
       <div className="fixed inset-0 bg-black/40 z-40" onClick={onClose} />
-      <div className="fixed top-0 right-0 h-full w-130 z-50 bg-background border-l border-border flex flex-col animate-in slide-in-from-right duration-200 ease-out">
+      <div className="fixed top-0 right-0 h-full w-full md:w-130 z-50 bg-background border-l border-border flex flex-col animate-in slide-in-from-right duration-200 ease-out">
 
         {/* Hero Header */}
         <div className="relative overflow-hidden shrink-0">

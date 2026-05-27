@@ -267,7 +267,7 @@ export const NewsDashboard = () => {
   };
 
   return (
-    <div className="min-h-screen bg-background px-5 pt-5 pb-10">
+    <div className="min-h-screen bg-background px-3 pt-4 pb-10 md:px-5 md:pt-5">
       {/* 피드 탭 */}
       <div className="flex items-center gap-1 mb-5 p-1 rounded-xl bg-muted/50 border border-border w-fit">
         {TAB_CONFIG.map((tab) => (
@@ -305,15 +305,15 @@ export const NewsDashboard = () => {
 
           {selectedNews ? (
             /* ── 기사 선택 상태: 상세 패널 + 오른쪽 리스트 ── */
-            <div className="flex gap-5 items-start">
-              <div className="flex-1 min-w-0">
+            <div className="flex flex-col md:flex-row gap-5 items-start">
+              <div className="flex-1 min-w-0 w-full">
                 <NewsDetailPanel
                   news={selectedNews}
                   onClose={() => setSelectedNews(null)}
                 />
               </div>
 
-              <div className="w-72 shrink-0 sticky top-16.5">
+              <div className="hidden md:block w-72 shrink-0 sticky top-16.5">
                 <Card className="p-0 gap-0 overflow-hidden">
                   <ScrollArea style={{ height: "calc(100vh - 220px)" }}>
                     {filteredNews.map((item, i) => (
@@ -340,7 +340,7 @@ export const NewsDashboard = () => {
             /* ── 기사 미선택 상태: 전체 너비 카드 그리드 ── */
             <>
               {isLoading ? (
-                <div className="grid grid-cols-2 lg:grid-cols-3 gap-4">
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
                   <GridSkeletons count={6} />
                 </div>
               ) : filteredNews.length === 0 ? (
@@ -348,7 +348,7 @@ export const NewsDashboard = () => {
                   해당 날짜의 뉴스가 없습니다
                 </div>
               ) : (
-                <div className="grid grid-cols-2 lg:grid-cols-3 gap-4">
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
                   {filteredNews.map((item, i) => (
                     <div
                       key={item.id}

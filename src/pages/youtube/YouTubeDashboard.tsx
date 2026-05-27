@@ -116,8 +116,8 @@ const AnalyticsCharts = ({ data }: { data: ReturnType<typeof useYouTubeAnalytics
   });
 
   return (
-    <div className="grid grid-cols-3 gap-5 mb-6">
-      <Card className="rounded-2xl border-border bg-white/5 col-span-1">
+    <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-6">
+      <Card className="rounded-2xl border-border bg-white/5">
         <CardHeader className="pb-1 pt-3 px-4">
           <CardTitle className="text-sm font-semibold text-muted-foreground">조회수 (28일)</CardTitle>
         </CardHeader>
@@ -125,7 +125,7 @@ const AnalyticsCharts = ({ data }: { data: ReturnType<typeof useYouTubeAnalytics
           <ReactECharts option={lineOption("조회수", views, "#ef4444", "회")} style={{ height: 130 }} notMerge />
         </CardContent>
       </Card>
-      <Card className="rounded-2xl border-border bg-white/5 col-span-1">
+      <Card className="rounded-2xl border-border bg-white/5">
         <CardHeader className="pb-1 pt-3 px-4">
           <CardTitle className="text-sm font-semibold text-muted-foreground">시청 시간 (시간)</CardTitle>
         </CardHeader>
@@ -133,7 +133,7 @@ const AnalyticsCharts = ({ data }: { data: ReturnType<typeof useYouTubeAnalytics
           <ReactECharts option={lineOption("시청시간", watchTime, "#3b82f6", "h")} style={{ height: 130 }} notMerge />
         </CardContent>
       </Card>
-      <Card className="rounded-2xl border-border bg-white/5 col-span-1">
+      <Card className="rounded-2xl border-border bg-white/5">
         <CardHeader className="pb-1 pt-3 px-4">
           <CardTitle className="text-sm font-semibold text-muted-foreground">CTR (%)</CardTitle>
         </CardHeader>
@@ -350,31 +350,31 @@ const YouTubeDashboard = () => {
   }
 
   return (
-    <div className="px-5 pt-5 pb-8">
+    <div className="px-3 pt-4 pb-8 md:px-5 md:pt-5">
       {/* 헤더 */}
-      <div className="flex items-start justify-between mb-6">
-        <div className="flex items-center gap-3">
+      <div className="flex items-start justify-between mb-6 gap-3">
+        <div className="flex items-center gap-3 min-w-0">
           {channel?.thumbnail && (
-            <img src={channel.thumbnail} alt="channel" className="h-12 w-12 rounded-full ring-2 ring-red-500/30" />
+            <img src={channel.thumbnail} alt="channel" className="h-10 w-10 md:h-12 md:w-12 rounded-full ring-2 ring-red-500/30 shrink-0" />
           )}
-          <div>
+          <div className="min-w-0">
             <div className="flex items-center gap-2">
-              <h2 className="text-2xl font-bold text-foreground tracking-tight">
+              <h2 className="text-xl md:text-2xl font-bold text-foreground tracking-tight truncate">
                 {channel?.title ?? "내 채널"}
               </h2>
-              <Youtube className="h-5 w-5 text-red-500" />
+              <Youtube className="h-5 w-5 text-red-500 shrink-0" />
             </div>
             <p className="text-sm text-muted-foreground">채널 통계 대시보드</p>
           </div>
         </div>
-        <div className="flex gap-2">
+        <div className="flex gap-2 shrink-0">
           <Button variant="ghost" size="sm" onClick={() => refetch()} className="h-8 gap-1.5 text-xs text-muted-foreground">
             <RefreshCw className={cn("h-3.5 w-3.5", loading && "animate-spin")} />
-            새로고침
+            <span className="hidden sm:inline">새로고침</span>
           </Button>
           <Button variant="outline" size="sm" onClick={signOut} className="h-8 gap-1.5 text-xs">
             <LogOut className="h-3.5 w-3.5" />
-            로그아웃
+            <span className="hidden sm:inline">로그아웃</span>
           </Button>
         </div>
       </div>
@@ -422,12 +422,12 @@ const YouTubeDashboard = () => {
       <div className="mb-6">
         <Card className="rounded-2xl border-border bg-white/5 shadow-2xl">
           <CardContent className="pt-4">
-            <div className="grid grid-cols-[auto_1fr_auto_auto_auto] text-[10px] font-bold uppercase tracking-wider text-muted-foreground pb-2 border-b border-border px-2 gap-4">
-              <span className="w-16" />
+            <div className="grid grid-cols-[auto_1fr_auto] sm:grid-cols-[auto_1fr_auto_auto_auto] text-[10px] font-bold uppercase tracking-wider text-muted-foreground pb-2 border-b border-border px-2 gap-3 sm:gap-4">
+              <span className="w-14 sm:w-16" />
               <span>제목</span>
               <span className="text-right">조회수</span>
-              <span className="text-right">좋아요</span>
-              <span className="text-right">댓글</span>
+              <span className="hidden sm:block text-right">좋아요</span>
+              <span className="hidden sm:block text-right">댓글</span>
             </div>
             <ScrollArea className="h-64">
               {chLoading ? (
@@ -446,9 +446,9 @@ const YouTubeDashboard = () => {
                       href={v.url}
                       target="_blank"
                       rel="noreferrer"
-                      className="grid grid-cols-[auto_1fr_auto_auto_auto] items-center gap-4 px-2 py-2 rounded-lg hover:bg-white/5 transition-colors group"
+                      className="grid grid-cols-[auto_1fr_auto] sm:grid-cols-[auto_1fr_auto_auto_auto] items-center gap-3 sm:gap-4 px-2 py-2 rounded-lg hover:bg-white/5 transition-colors group"
                     >
-                      <img src={v.thumbnail} alt={v.title} className="w-16 h-9 rounded object-cover shrink-0" />
+                      <img src={v.thumbnail} alt={v.title} className="w-14 h-8 sm:w-16 sm:h-9 rounded object-cover shrink-0" />
                       <div className="min-w-0">
                         <p className="text-sm font-medium text-foreground truncate group-hover:text-red-400 transition-colors">
                           {v.title}
@@ -460,10 +460,10 @@ const YouTubeDashboard = () => {
                       <span className="text-sm font-mono text-muted-foreground text-right whitespace-nowrap">
                         <Eye className="inline h-3 w-3 mr-0.5" />{fmt(v.viewCount)}
                       </span>
-                      <span className="text-sm font-mono text-muted-foreground text-right whitespace-nowrap">
+                      <span className="hidden sm:block text-sm font-mono text-muted-foreground text-right whitespace-nowrap">
                         <ThumbsUp className="inline h-3 w-3 mr-0.5" />{fmt(v.likeCount)}
                       </span>
-                      <span className="text-sm font-mono text-muted-foreground text-right whitespace-nowrap">
+                      <span className="hidden sm:block text-sm font-mono text-muted-foreground text-right whitespace-nowrap">
                         <MessageSquare className="inline h-3 w-3 mr-0.5" />{fmt(v.commentCount)}
                       </span>
                     </a>
@@ -480,7 +480,7 @@ const YouTubeDashboard = () => {
         <h3 className="text-sm font-semibold text-muted-foreground uppercase tracking-wider">자동화 도구</h3>
         <div className="flex-1 h-px bg-border" />
       </div>
-      <div className="grid grid-cols-2 gap-5">
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
         <Mp3Section />
         <VideoCreatorSection />
       </div>
