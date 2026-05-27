@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { X, Plane, Calendar, MessageSquare } from "lucide-react";
-import { getEffectiveCategory, CATEGORY_RULES, CATEGORY_KEYS, type Category } from "@/lib/categoryRules";
+import { getEffectiveCategory, getCategory, CATEGORY_RULES, CATEGORY_KEYS, type Category } from "@/lib/categoryRules";
 import type { TravelPeriod } from "@/hooks/useTravelPeriods";
 import type { Transaction } from "@/hooks/useExpenseData";
 import { cn } from "@/lib/utils";
@@ -249,12 +249,9 @@ export const TravelDetailView = ({ period, transactions, onClose, onUntag, onUpd
 
           {/* Transaction list */}
           <div className="px-6 py-4">
-            <div className="flex items-center justify-between mb-3">
-              <p className="text-xs font-medium text-muted-foreground">
-                거래 내역 <span className="text-foreground">{sorted.length}건</span>
-              </p>
-              <p className="text-[10px] text-muted-foreground/60">카테고리를 클릭해 변경 · 💬 아이콘으로 메모 추가</p>
-            </div>
+            <p className="text-xs font-medium text-muted-foreground mb-3">
+              거래 내역 <span className="text-foreground">{sorted.length}건</span>
+            </p>
 
             {sorted.length === 0 ? (
               <p className="text-sm text-muted-foreground text-center py-10">태깅된 거래가 없습니다</p>
@@ -263,15 +260,34 @@ export const TravelDetailView = ({ period, transactions, onClose, onUntag, onUpd
                 {sorted.map((t) => {
                   const effectiveCat = getEffectiveCategory(t);
                   const isCustomCat = !!t.category;
+                  const hex = CATEGORY_RULES[effectiveCat].hex;
+                  const isCatOpen = catEditId === t.id;
 
                   return (
                     <div key={t.id}>
                       {/* Main row */}
-                      <div className="group flex items-center gap-3 rounded-lg px-3 py-2 hover:bg-white/5 transition-colors">
-                        <div
-                          className="w-1.5 h-5 rounded-full shrink-0"
-                          style={{ backgroundColor: CATEGORY_RULES[effectiveCat].hex + "80" }}
-                        />
+                      <div className="group flex items-center gap-2.5 rounded-lg px-3 py-2.5 hover:bg-white/5 transition-colors">
+                        {/* Category badge button */}
+                        <button
+                          onClick={() => setCatEditId(isCatOpen ? null : t.id)}
+                          className={cn(
+                            "shrink-0 flex items-center gap-1 px-2 py-1 rounded-md text-[11px] font-semibold transition-all border",
+                            isCatOpen ? "opacity-100 ring-1" : "opacity-80 hover:opacity-100"
+                          )}
+                          style={{
+                            backgroundColor: hex + "22",
+                            borderColor: hex + (isCatOpen ? "80" : "40"),
+                            color: hex,
+                          }}
+                          title="카테고리 변경"
+                        >
+                          {effectiveCat}
+                          {isCustomCat && (
+                            <span className="text-[9px] opacity-70">✎</span>
+                          )}
+                        </button>
+
+                        {/* Merchant + date */}
                         <div className="flex-1 min-w-0">
                           <div className="flex items-center gap-1.5">
                             <p className="text-sm text-foreground truncate">{t.merchant}</p>
@@ -279,39 +295,10 @@ export const TravelDetailView = ({ period, transactions, onClose, onUntag, onUpd
                           </div>
                           <p className="text-[10px] text-muted-foreground font-mono">
                             {t.transaction_at.slice(5, 10).replace("-", "/")}
-                            {catEditId === t.id ? (
-                              <select
-                                value={effectiveCat}
-                                onChange={(e) => {
-                                  onUpdateMeta(t.id, { category: e.target.value });
-                                  setCatEditId(null);
-                                }}
-                                onBlur={() => setCatEditId(null)}
-                                autoFocus
-                                className="ml-1 text-[10px] bg-background border border-border rounded px-1 py-0 text-foreground"
-                              >
-                                {CATEGORY_KEYS.map((c) => (
-                                  <option key={c} value={c}>{c}</option>
-                                ))}
-                              </select>
-                            ) : (
-                              <span
-                                className={cn(
-                                  "ml-1 cursor-pointer transition-colors rounded px-0.5",
-                                  isCustomCat
-                                    ? "text-sky-400 opacity-90 hover:opacity-100"
-                                    : "opacity-60 hover:opacity-90 hover:text-sky-400"
-                                )}
-                                title="클릭해서 카테고리 변경"
-                                onClick={() => setCatEditId(t.id)}
-                              >
-                                {effectiveCat}
-                                {isCustomCat && " ✎"}
-                              </span>
-                            )}
                           </p>
                         </div>
 
+                        {/* Amount */}
                         <span className={cn(
                           "text-sm font-mono shrink-0",
                           t.type === "expense" ? "text-foreground" : "text-emerald-500"
@@ -343,9 +330,48 @@ export const TravelDetailView = ({ period, transactions, onClose, onUntag, onUpd
                         </button>
                       </div>
 
+                      {/* Inline category picker */}
+                      {isCatOpen && (
+                        <div className="flex items-center gap-1.5 flex-wrap px-3 pb-2.5 pt-0.5">
+                          {CATEGORY_KEYS.map((c) => {
+                            const cHex = CATEGORY_RULES[c].hex;
+                            const isSelected = c === effectiveCat;
+                            return (
+                              <button
+                                key={c}
+                                onClick={() => {
+                                  const autocat = getCategory(t.merchant);
+                                  onUpdateMeta(t.id, { category: c === autocat ? null : c });
+                                  setCatEditId(null);
+                                }}
+                                className={cn(
+                                  "px-3 py-1 rounded-full text-[11px] font-semibold border transition-all",
+                                  isSelected ? "opacity-100 shadow-sm" : "opacity-45 hover:opacity-75"
+                                )}
+                                style={{
+                                  backgroundColor: cHex + (isSelected ? "30" : "15"),
+                                  borderColor: cHex + (isSelected ? "70" : "30"),
+                                  color: cHex,
+                                }}
+                              >
+                                {c}
+                              </button>
+                            );
+                          })}
+                          {isCustomCat && (
+                            <button
+                              onClick={() => { onUpdateMeta(t.id, { category: null }); setCatEditId(null); }}
+                              className="px-2.5 py-1 rounded-full text-[11px] border border-border text-muted-foreground hover:text-foreground hover:border-border/80 transition-all"
+                            >
+                              초기화
+                            </button>
+                          )}
+                        </div>
+                      )}
+
                       {/* Note display */}
                       {t.note && noteEditId !== t.id && (
-                        <div className="flex items-start gap-1.5 mx-3 mb-1 mt-0.5 pl-5">
+                        <div className="flex items-start gap-1.5 mx-3 mb-1 mt-0.5 pl-3">
                           <p className="text-[10px] text-yellow-500/70 bg-yellow-500/5 border border-yellow-500/10 rounded px-2 py-0.5 flex-1">
                             {t.note}
                           </p>
@@ -354,7 +380,7 @@ export const TravelDetailView = ({ period, transactions, onClose, onUntag, onUpd
 
                       {/* Note editor */}
                       {noteEditId === t.id && (
-                        <div className="flex items-center gap-2 mx-3 mb-2 mt-0.5 pl-5">
+                        <div className="flex items-center gap-2 mx-3 mb-2 mt-0.5 pl-3">
                           <input
                             value={noteInput}
                             onChange={(e) => setNoteInput(e.target.value)}
