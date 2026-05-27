@@ -10,6 +10,7 @@ import { ExpenseChartCard } from "./ExpenseChartCard";
 import { ExpenseListCard } from "./ExpenseListCard";
 import { TravelPeriodCard } from "./TravelPeriodCard";
 import { TravelDetailView } from "./TravelDetailView";
+import { TravelChartCard } from "./TravelChartCard";
 import { cn } from "@/lib/utils";
 
 const fmtDate = (d: string) => d.slice(5).replace("-", "/");
@@ -197,11 +198,16 @@ export const ExpenseDashboard = () => {
         <div className="flex-1 h-px bg-border" />
       </div>
 
-      <div className="mb-6">
+      <div className="grid grid-cols-[1.5fr_1fr] gap-5 mb-6">
         <ExpenseChartCard
           dailyStats={dailyStats}
           weeklyStats={weeklyStats}
           monthlyStats={monthlyStats}
+        />
+        <TravelChartCard
+          periods={periods}
+          transactions={transactions}
+          tags={tags}
         />
       </div>
 
