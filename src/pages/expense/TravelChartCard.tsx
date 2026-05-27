@@ -3,7 +3,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Plane, BarChart2 } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { getCategory, CATEGORY_RULES, CATEGORY_KEYS, type Category } from "@/lib/categoryRules";
+import { getEffectiveCategory, CATEGORY_RULES, CATEGORY_KEYS, type Category } from "@/lib/categoryRules";
 import type { TravelPeriod } from "@/hooks/useTravelPeriods";
 import type { Transaction } from "@/hooks/useExpenseData";
 import ReactECharts from "echarts-for-react";
@@ -35,7 +35,7 @@ export const TravelChartCard = ({ periods, transactions, tags }: Props) => {
 
         const catAmounts: Partial<Record<Category, number>> = {};
         txs.forEach((t) => {
-          const cat = getCategory(t.merchant);
+          const cat = getEffectiveCategory(t);
           catAmounts[cat] = (catAmounts[cat] ?? 0) + Math.abs(t.amount);
         });
 

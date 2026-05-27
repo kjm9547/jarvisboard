@@ -7,7 +7,7 @@ import {
   CheckCircle2, Pencil, Check, X,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { getCategory, CATEGORY_RULES, type Category } from "@/lib/categoryRules";
+import { getEffectiveCategory, CATEGORY_RULES, type Category } from "@/lib/categoryRules";
 import type { TravelPeriod } from "@/hooks/useTravelPeriods";
 import type { Transaction } from "@/hooks/useExpenseData";
 
@@ -136,7 +136,7 @@ export const TravelPeriodCard = ({
 
     const catAmounts: Partial<Record<Category, number>> = {};
     expenses.forEach((t) => {
-      const cat = getCategory(t.merchant);
+      const cat = getEffectiveCategory(t);
       catAmounts[cat] = (catAmounts[cat] ?? 0) + Math.abs(t.amount);
     });
 

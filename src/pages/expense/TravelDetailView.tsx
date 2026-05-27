@@ -1,5 +1,6 @@
-import { X, Plane, Calendar } from "lucide-react";
-import { getCategory, CATEGORY_RULES, type Category } from "@/lib/categoryRules";
+import { useState } from "react";
+import { X, Plane, Calendar, MessageSquare } from "lucide-react";
+import { getEffectiveCategory, CATEGORY_RULES, CATEGORY_KEYS, type Category } from "@/lib/categoryRules";
 import type { TravelPeriod } from "@/hooks/useTravelPeriods";
 import type { Transaction } from "@/hooks/useExpenseData";
 import { cn } from "@/lib/utils";
@@ -9,12 +10,17 @@ interface Props {
   transactions: Transaction[];
   onClose: () => void;
   onUntag: (txId: string) => void;
+  onUpdateMeta: (id: string, fields: { category?: string | null; note?: string | null }) => void;
 }
 
 const C = 2 * Math.PI * 45;
 const fmt = (d: string) => d.slice(5).replace("-", "/");
 
-export const TravelDetailView = ({ period, transactions, onClose, onUntag }: Props) => {
+export const TravelDetailView = ({ period, transactions, onClose, onUntag, onUpdateMeta }: Props) => {
+  const [catEditId, setCatEditId] = useState<string | null>(null);
+  const [noteEditId, setNoteEditId] = useState<string | null>(null);
+  const [noteInput, setNoteInput] = useState("");
+
   const expenses = transactions.filter((t) => t.type === "expense");
   const total = expenses.reduce((s, t) => s + Math.abs(t.amount), 0);
 
@@ -26,7 +32,7 @@ export const TravelDetailView = ({ period, transactions, onClose, onUntag }: Pro
 
   const catAmounts: Partial<Record<Category, number>> = {};
   expenses.forEach((t) => {
-    const cat = getCategory(t.merchant);
+    const cat = getEffectiveCategory(t);
     catAmounts[cat] = (catAmounts[cat] ?? 0) + Math.abs(t.amount);
   });
 
@@ -44,7 +50,6 @@ export const TravelDetailView = ({ period, transactions, onClose, onUntag }: Pro
       })
     : [];
 
-  // Day-by-day breakdown
   const dayBreakdown = (() => {
     const map: Record<string, { amount: number; count: number }> = {};
     expenses.forEach((t) => {
@@ -68,6 +73,17 @@ export const TravelDetailView = ({ period, transactions, onClose, onUntag }: Pro
     : 0;
   const overBudget = period.budget != null && total >= period.budget;
 
+  const openNoteEdit = (t: Transaction) => {
+    setNoteEditId(noteEditId === t.id ? null : t.id);
+    setNoteInput(t.note ?? "");
+    setCatEditId(null);
+  };
+
+  const saveNote = (id: string) => {
+    onUpdateMeta(id, { note: noteInput.trim() || null });
+    setNoteEditId(null);
+  };
+
   return (
     <>
       <div className="fixed inset-0 bg-black/40 z-40" onClick={onClose} />
@@ -81,7 +97,6 @@ export const TravelDetailView = ({ period, transactions, onClose, onUntag }: Pro
           </div>
 
           <div className="relative px-6 pt-5 pb-5">
-            {/* Top row */}
             <div className="flex items-start justify-between gap-3 mb-4">
               <div className="min-w-0">
                 <div className="flex items-center gap-2 mb-1">
@@ -105,7 +120,6 @@ export const TravelDetailView = ({ period, transactions, onClose, onUntag }: Pro
               </button>
             </div>
 
-            {/* Stats row */}
             <div className="grid grid-cols-3 gap-2 mb-3">
               {[
                 { label: "총 지출", value: `${total.toLocaleString()}원` },
@@ -119,7 +133,6 @@ export const TravelDetailView = ({ period, transactions, onClose, onUntag }: Pro
               ))}
             </div>
 
-            {/* Budget bar */}
             {period.budget != null && period.budget > 0 && (
               <div>
                 <div className="flex justify-between items-baseline mb-1.5">
@@ -174,10 +187,7 @@ export const TravelDetailView = ({ period, transactions, onClose, onUntag }: Pro
                       </p>
                       <div className="flex-1 h-1.5 rounded-full bg-white/8 overflow-hidden">
                         <div
-                          className={cn(
-                            "h-full rounded-full transition-all",
-                            isMax ? "bg-sky-400" : "bg-sky-500/50"
-                          )}
+                          className={cn("h-full rounded-full transition-all", isMax ? "bg-sky-400" : "bg-sky-500/50")}
                           style={{ width: `${pct}%` }}
                         />
                       </div>
@@ -205,9 +215,7 @@ export const TravelDetailView = ({ period, transactions, onClose, onUntag }: Pro
                   {segments.map(({ cat, len, dashOffset }) => (
                     <circle
                       key={cat}
-                      r={45}
-                      cx={55}
-                      cy={55}
+                      r={45} cx={55} cy={55}
                       fill="none"
                       stroke={CATEGORY_RULES[cat].hex}
                       strokeWidth={10}
@@ -224,7 +232,6 @@ export const TravelDetailView = ({ period, transactions, onClose, onUntag }: Pro
                     여행
                   </text>
                 </svg>
-
                 <div className="flex flex-col gap-2 min-w-0 flex-1">
                   {activeCats.map(([cat, amount]) => (
                     <div key={cat} className="flex items-center gap-2">
@@ -242,44 +249,139 @@ export const TravelDetailView = ({ period, transactions, onClose, onUntag }: Pro
 
           {/* Transaction list */}
           <div className="px-6 py-4">
-            <p className="text-xs font-medium text-muted-foreground mb-3">
-              거래 내역 <span className="text-foreground">{sorted.length}건</span>
-            </p>
+            <div className="flex items-center justify-between mb-3">
+              <p className="text-xs font-medium text-muted-foreground">
+                거래 내역 <span className="text-foreground">{sorted.length}건</span>
+              </p>
+              <p className="text-[10px] text-muted-foreground/60">카테고리를 클릭해 변경 · 💬 아이콘으로 메모 추가</p>
+            </div>
+
             {sorted.length === 0 ? (
               <p className="text-sm text-muted-foreground text-center py-10">태깅된 거래가 없습니다</p>
             ) : (
               <div className="space-y-0.5">
                 {sorted.map((t) => {
-                  const cat = getCategory(t.merchant);
+                  const effectiveCat = getEffectiveCategory(t);
+                  const isCustomCat = !!t.category;
+
                   return (
-                    <div
-                      key={t.id}
-                      className="group flex items-center gap-3 rounded-lg px-3 py-2 hover:bg-white/5 transition-colors"
-                    >
-                      <div
-                        className="w-1.5 h-5 rounded-full shrink-0"
-                        style={{ backgroundColor: CATEGORY_RULES[cat].hex + "80" }}
-                      />
-                      <div className="flex-1 min-w-0">
-                        <p className="text-sm text-foreground truncate">{t.merchant}</p>
-                        <p className="text-[10px] text-muted-foreground font-mono">
-                          {t.transaction_at.slice(5, 10).replace("-", "/")}
-                          <span className="ml-1 opacity-60">{cat}</span>
-                        </p>
+                    <div key={t.id}>
+                      {/* Main row */}
+                      <div className="group flex items-center gap-3 rounded-lg px-3 py-2 hover:bg-white/5 transition-colors">
+                        <div
+                          className="w-1.5 h-5 rounded-full shrink-0"
+                          style={{ backgroundColor: CATEGORY_RULES[effectiveCat].hex + "80" }}
+                        />
+                        <div className="flex-1 min-w-0">
+                          <div className="flex items-center gap-1.5">
+                            <p className="text-sm text-foreground truncate">{t.merchant}</p>
+                            {t.note && <MessageSquare className="w-3 h-3 text-yellow-500 shrink-0" />}
+                          </div>
+                          <p className="text-[10px] text-muted-foreground font-mono">
+                            {t.transaction_at.slice(5, 10).replace("-", "/")}
+                            {catEditId === t.id ? (
+                              <select
+                                value={effectiveCat}
+                                onChange={(e) => {
+                                  onUpdateMeta(t.id, { category: e.target.value });
+                                  setCatEditId(null);
+                                }}
+                                onBlur={() => setCatEditId(null)}
+                                autoFocus
+                                className="ml-1 text-[10px] bg-background border border-border rounded px-1 py-0 text-foreground"
+                              >
+                                {CATEGORY_KEYS.map((c) => (
+                                  <option key={c} value={c}>{c}</option>
+                                ))}
+                              </select>
+                            ) : (
+                              <span
+                                className={cn(
+                                  "ml-1 cursor-pointer transition-colors rounded px-0.5",
+                                  isCustomCat
+                                    ? "text-sky-400 opacity-90 hover:opacity-100"
+                                    : "opacity-60 hover:opacity-90 hover:text-sky-400"
+                                )}
+                                title="클릭해서 카테고리 변경"
+                                onClick={() => setCatEditId(t.id)}
+                              >
+                                {effectiveCat}
+                                {isCustomCat && " ✎"}
+                              </span>
+                            )}
+                          </p>
+                        </div>
+
+                        <span className={cn(
+                          "text-sm font-mono shrink-0",
+                          t.type === "expense" ? "text-foreground" : "text-emerald-500"
+                        )}>
+                          {t.type === "expense" ? "-" : "+"}{Math.abs(t.amount).toLocaleString()}원
+                        </span>
+
+                        {/* Note button */}
+                        <button
+                          onClick={() => openNoteEdit(t)}
+                          className={cn(
+                            "shrink-0 p-1 rounded transition-all",
+                            t.note
+                              ? "text-yellow-500 hover:bg-yellow-500/10"
+                              : "opacity-0 group-hover:opacity-100 text-muted-foreground hover:text-yellow-500 hover:bg-yellow-500/10"
+                          )}
+                          title="특이사항 메모"
+                        >
+                          <MessageSquare className="w-3 h-3" />
+                        </button>
+
+                        {/* Untag button */}
+                        <button
+                          onClick={() => onUntag(t.id)}
+                          className="shrink-0 opacity-0 group-hover:opacity-100 p-1 rounded text-muted-foreground hover:text-red-500 hover:bg-red-500/10 transition-all"
+                          title="태그 해제"
+                        >
+                          <X className="w-3 h-3" />
+                        </button>
                       </div>
-                      <span className={cn(
-                        "text-sm font-mono shrink-0",
-                        t.type === "expense" ? "text-foreground" : "text-emerald-500"
-                      )}>
-                        {t.type === "expense" ? "-" : "+"}{Math.abs(t.amount).toLocaleString()}원
-                      </span>
-                      <button
-                        onClick={() => onUntag(t.id)}
-                        className="shrink-0 opacity-0 group-hover:opacity-100 p-1 rounded text-muted-foreground hover:text-red-500 hover:bg-red-500/10 transition-all"
-                        title="태그 해제"
-                      >
-                        <X className="w-3 h-3" />
-                      </button>
+
+                      {/* Note display */}
+                      {t.note && noteEditId !== t.id && (
+                        <div className="flex items-start gap-1.5 mx-3 mb-1 mt-0.5 pl-5">
+                          <p className="text-[10px] text-yellow-500/70 bg-yellow-500/5 border border-yellow-500/10 rounded px-2 py-0.5 flex-1">
+                            {t.note}
+                          </p>
+                        </div>
+                      )}
+
+                      {/* Note editor */}
+                      {noteEditId === t.id && (
+                        <div className="flex items-center gap-2 mx-3 mb-2 mt-0.5 pl-5">
+                          <input
+                            value={noteInput}
+                            onChange={(e) => setNoteInput(e.target.value)}
+                            onKeyDown={(e) => {
+                              if (e.key === "Enter") saveNote(t.id);
+                              if (e.key === "Escape") setNoteEditId(null);
+                            }}
+                            placeholder="특이사항 메모 입력..."
+                            className="flex-1 min-w-0 text-xs bg-yellow-500/5 border border-yellow-500/20 rounded-md px-2 py-1 text-foreground placeholder:text-muted-foreground/50 focus:outline-none focus:border-yellow-500/40"
+                            autoFocus
+                          />
+                          <button
+                            onClick={() => saveNote(t.id)}
+                            className="text-[10px] text-yellow-500 px-2 py-1 rounded hover:bg-yellow-500/10 shrink-0"
+                          >
+                            저장
+                          </button>
+                          {t.note && (
+                            <button
+                              onClick={() => { onUpdateMeta(t.id, { note: null }); setNoteEditId(null); }}
+                              className="text-[10px] text-muted-foreground hover:text-red-500 shrink-0"
+                            >
+                              삭제
+                            </button>
+                          )}
+                        </div>
+                      )}
                     </div>
                   );
                 })}

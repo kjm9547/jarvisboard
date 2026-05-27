@@ -53,3 +53,8 @@ export function getCategory(merchant: string): Category {
   }
   return "기타";
 }
+
+export function getEffectiveCategory(t: { category?: string | null; merchant: string }): Category {
+  if (t.category && t.category in CATEGORY_RULES) return t.category as Category;
+  return getCategory(t.merchant);
+}

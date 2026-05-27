@@ -61,6 +61,7 @@ export const ExpenseDashboard = () => {
     totalIncome,
     thisMonthExpense,
     saveTransactions,
+    updateTransactionMeta,
   } = useExpenseData();
 
   const latestDate = transactions[0]?.transaction_at.slice(0, 10) ?? null;
@@ -241,6 +242,7 @@ export const ExpenseDashboard = () => {
             getTaggedPeriod={getTaggedPeriod}
             tagTransactions={tagTransactions}
             untagTransactions={untagTransactions}
+            onUpdateMeta={updateTransactionMeta}
           />
         </div>
       </div>
@@ -251,6 +253,7 @@ export const ExpenseDashboard = () => {
           transactions={periodTransactions}
           onClose={() => setSelectedPeriod(null)}
           onUntag={(txId) => untagTransactions([txId])}
+          onUpdateMeta={updateTransactionMeta}
         />
       )}
     </div>

@@ -3,7 +3,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { List, ArrowDownLeft, ArrowUpRight, Plane, X, Check, ChevronLeft, ChevronRight } from "lucide-react";
+import { List, ArrowDownLeft, ArrowUpRight, Plane, X, Check, ChevronLeft, ChevronRight, MessageSquare } from "lucide-react";
 import { cn } from "@/lib/utils";
 import type { Transaction } from "@/hooks/useExpenseData";
 import type { TravelPeriod } from "@/hooks/useTravelPeriods";
@@ -16,9 +16,10 @@ interface Props {
   getTaggedPeriod: (txId: string) => TravelPeriod | undefined;
   tagTransactions: (txIds: string[], periodId: string) => void;
   untagTransactions: (txIds: string[]) => void;
+  onUpdateMeta: (id: string, fields: { category?: string | null; note?: string | null }) => void;
 }
 
-type Filter = "all" | "expense" | "income";
+type Filter = "all" | "expense" | "income" | "flagged";
 
 const DAYS = ["일", "월", "화", "수", "목", "금", "토"];
 
@@ -40,48 +41,48 @@ export const ExpenseListCard = ({
   getTaggedPeriod,
   tagTransactions,
   untagTransactions,
+  onUpdateMeta,
 }: Props) => {
   const [filter, setFilter] = useState<Filter>("all");
   const [tagMode, setTagMode] = useState(false);
   const [activePeriodId, setActivePeriodId] = useState<string>("");
   const [checkedIds, setCheckedIds] = useState<Set<string>>(new Set());
+  const [noteEditId, setNoteEditId] = useState<string | null>(null);
+  const [noteInput, setNoteInput] = useState("");
   const monthScrollRef = useRef<HTMLDivElement>(null);
 
-  // 사용 가능한 월 목록 (최신순)
   const availableMonths = useMemo(() => {
     const set = new Set<string>();
     transactions.forEach((t) => set.add(t.transaction_at.slice(0, 7)));
     return Array.from(set).sort((a, b) => b.localeCompare(a));
   }, [transactions]);
 
-  // 기본값: 가장 최근 월
   const defaultMonth = availableMonths[0] ?? new Date().toISOString().slice(0, 7);
   const [selectedMonth, setSelectedMonth] = useState<string>(defaultMonth);
 
-  // 새 데이터 로드시 최신 월로 갱신
   useEffect(() => {
     if (availableMonths.length > 0 && !availableMonths.includes(selectedMonth)) {
       setSelectedMonth(availableMonths[0]);
     }
   }, [availableMonths]);
 
-  // 월 이동
   const currentMonthIdx = availableMonths.indexOf(selectedMonth);
   const canPrev = currentMonthIdx < availableMonths.length - 1;
   const canNext = currentMonthIdx > 0;
   const goPrev = () => canPrev && setSelectedMonth(availableMonths[currentMonthIdx + 1]);
   const goNext = () => canNext && setSelectedMonth(availableMonths[currentMonthIdx - 1]);
 
-  // 선택 월 기준 필터링
   const filtered = useMemo(() => {
     return transactions.filter((t) => {
       const monthMatch = t.transaction_at.slice(0, 7) === selectedMonth;
-      const typeMatch = filter === "all" ? true : t.type === filter;
+      const typeMatch =
+        filter === "all" ? true
+        : filter === "flagged" ? !!t.note
+        : t.type === filter;
       return monthMatch && typeMatch;
     });
   }, [transactions, selectedMonth, filter]);
 
-  // 날짜별 그룹화
   const groupedByDate = useMemo(() => {
     const map: Record<string, Transaction[]> = {};
     filtered.forEach((t) => {
@@ -92,7 +93,6 @@ export const ExpenseListCard = ({
     return Object.entries(map).sort(([a], [b]) => b.localeCompare(a));
   }, [filtered]);
 
-  // 월별 합계
   const monthSummary = useMemo(() => {
     const expense = filtered
       .filter((t) => t.type === "expense")
@@ -103,7 +103,17 @@ export const ExpenseListCard = ({
     return { expense, income };
   }, [filtered]);
 
-  const filterLabels: Record<Filter, string> = { all: "전체", expense: "지출", income: "수입" };
+  const flaggedCount = useMemo(
+    () => transactions.filter((t) => t.transaction_at.slice(0, 7) === selectedMonth && !!t.note).length,
+    [transactions, selectedMonth]
+  );
+
+  const filterLabels: Record<Filter, string> = {
+    all: "전체",
+    expense: "지출",
+    income: "수입",
+    flagged: `특이사항${flaggedCount > 0 ? ` ${flaggedCount}` : ""}`,
+  };
 
   const enterTagMode = () => {
     setTagMode(true);
@@ -156,6 +166,21 @@ export const ExpenseListCard = ({
     exitTagMode();
   };
 
+  const openNoteEdit = (t: Transaction, e: React.MouseEvent) => {
+    e.stopPropagation();
+    if (noteEditId === t.id) {
+      setNoteEditId(null);
+    } else {
+      setNoteEditId(t.id);
+      setNoteInput(t.note ?? "");
+    }
+  };
+
+  const saveNote = (id: string) => {
+    onUpdateMeta(id, { note: noteInput.trim() || null });
+    setNoteEditId(null);
+  };
+
   return (
     <Card className="rounded-2xl border-border bg-white/5 shadow-2xl">
       <CardHeader className="pb-2">
@@ -170,16 +195,20 @@ export const ExpenseListCard = ({
             )}
           </CardTitle>
           <div className="flex items-center gap-2">
-            <div className="flex gap-1">
-              {(["all", "expense", "income"] as Filter[]).map((f) => (
+            <div className="flex gap-1 flex-wrap">
+              {(["all", "expense", "income", "flagged"] as Filter[]).map((f) => (
                 <Badge
                   key={f}
                   variant={filter === f ? "default" : "secondary"}
                   className={cn(
                     "cursor-pointer text-xs px-2.5 py-1 transition-all",
                     filter === f
-                      ? "bg-primary text-primary-foreground"
-                      : "bg-muted/50 text-muted-foreground hover:bg-muted"
+                      ? f === "flagged"
+                        ? "bg-yellow-500 text-white"
+                        : "bg-primary text-primary-foreground"
+                      : f === "flagged"
+                        ? "bg-yellow-500/10 text-yellow-600 dark:text-yellow-400 border border-yellow-500/20 hover:bg-yellow-500/20"
+                        : "bg-muted/50 text-muted-foreground hover:bg-muted"
                   )}
                   onClick={() => setFilter(f)}
                 >
@@ -200,12 +229,7 @@ export const ExpenseListCard = ({
                 여행 추가
               </Button>
             ) : (
-              <Button
-                size="sm"
-                variant="ghost"
-                className="h-7 text-xs gap-1 px-2"
-                onClick={exitTagMode}
-              >
+              <Button size="sm" variant="ghost" className="h-7 text-xs gap-1 px-2" onClick={exitTagMode}>
                 <X className="w-3 h-3" />
                 취소
               </Button>
@@ -252,7 +276,7 @@ export const ExpenseListCard = ({
         </div>
 
         {/* 월 요약 */}
-        {!loading && (
+        {!loading && filter !== "flagged" && (
           <div className="flex items-center gap-3 mt-1 px-0.5">
             <div className="flex items-center gap-1.5">
               <span className="text-[10px] text-muted-foreground">지출</span>
@@ -322,13 +346,16 @@ export const ExpenseListCard = ({
         <div
           className={cn(
             "text-[10px] font-bold uppercase tracking-wider text-muted-foreground border-b border-border pb-2 px-1 mb-1",
-            tagMode ? "grid grid-cols-[auto_auto_1fr_auto] gap-3" : "grid grid-cols-[auto_1fr_auto] gap-3"
+            tagMode
+              ? "grid grid-cols-[auto_auto_1fr_auto_auto] gap-3"
+              : "grid grid-cols-[auto_1fr_auto_auto] gap-3"
           )}
         >
           {tagMode && <span className="w-4" />}
           <span className="w-7" />
           <span>사용처</span>
           <span className="text-right">금액</span>
+          <span className="w-5" />
         </div>
 
         <ScrollArea className="h-105">
@@ -349,8 +376,18 @@ export const ExpenseListCard = ({
             </div>
           ) : filtered.length === 0 ? (
             <div className="flex flex-col items-center justify-center h-full text-sm text-muted-foreground py-16 gap-1">
-              <span>해당 월에 내역이 없습니다</span>
-              <span className="text-xs">{fmtMonth(selectedMonth)}</span>
+              {filter === "flagged" ? (
+                <>
+                  <MessageSquare className="w-8 h-8 opacity-20 mb-1" />
+                  <span>이 달에 등록된 특이사항이 없습니다</span>
+                  <span className="text-xs">거래 행의 💬 아이콘을 눌러 메모를 추가하세요</span>
+                </>
+              ) : (
+                <>
+                  <span>해당 월에 내역이 없습니다</span>
+                  <span className="text-xs">{fmtMonth(selectedMonth)}</span>
+                </>
+              )}
             </div>
           ) : (
             <div className="space-y-0 pt-1">
@@ -373,7 +410,6 @@ export const ExpenseListCard = ({
                       )}
                     </div>
 
-                    {/* 해당 날짜 거래 목록 */}
                     {txs.map((t) => {
                       const isExpense = t.type === "expense";
                       const d = new Date(t.transaction_at);
@@ -383,84 +419,139 @@ export const ExpenseListCard = ({
                       const isTravel = isChecked || !!taggedPeriod;
 
                       return (
-                        <div
-                          key={t.id}
-                          onClick={() => tagMode && isExpense && toggleCheck(t.id)}
-                          className={cn(
-                            "grid items-center gap-3 px-1 py-2 rounded-lg transition-colors",
-                            tagMode
-                              ? "grid-cols-[auto_auto_1fr_auto] cursor-pointer select-none"
-                              : "grid-cols-[auto_1fr_auto]",
-                            isChecked
-                              ? "bg-sky-500/15"
-                              : taggedPeriod
-                                ? "bg-sky-500/5 hover:bg-sky-500/10"
-                                : "hover:bg-white/5"
-                          )}
-                        >
-                          {/* Checkbox (tag mode only) */}
-                          {tagMode && (
+                        <div key={t.id}>
+                          {/* Main row */}
+                          <div
+                            onClick={() => tagMode && isExpense && toggleCheck(t.id)}
+                            className={cn(
+                              "grid items-center gap-3 px-1 py-2 rounded-lg transition-colors group",
+                              tagMode
+                                ? "grid-cols-[auto_auto_1fr_auto_auto] cursor-pointer select-none"
+                                : "grid-cols-[auto_1fr_auto_auto]",
+                              isChecked
+                                ? "bg-sky-500/15"
+                                : taggedPeriod
+                                  ? "bg-sky-500/5 hover:bg-sky-500/10"
+                                  : "hover:bg-white/5"
+                            )}
+                          >
+                            {/* Checkbox */}
+                            {tagMode && (
+                              <div
+                                className={cn(
+                                  "h-4 w-4 rounded border flex items-center justify-center shrink-0 transition-colors",
+                                  isExpense
+                                    ? isChecked
+                                      ? "border-sky-500 bg-sky-500"
+                                      : "border-border"
+                                    : "border-transparent"
+                                )}
+                              >
+                                {isChecked && <Check className="h-2.5 w-2.5 text-white" />}
+                              </div>
+                            )}
+
+                            {/* Icon */}
                             <div
                               className={cn(
-                                "h-4 w-4 rounded border flex items-center justify-center shrink-0 transition-colors",
-                                isExpense
-                                  ? isChecked
-                                    ? "border-sky-500 bg-sky-500"
-                                    : "border-border"
-                                  : "border-transparent"
+                                "h-7 w-7 rounded-full flex items-center justify-center shrink-0",
+                                isTravel
+                                  ? "bg-sky-500/15"
+                                  : isExpense
+                                    ? "bg-red-500/15"
+                                    : "bg-emerald-500/15"
                               )}
                             >
-                              {isChecked && <Check className="h-2.5 w-2.5 text-white" />}
+                              {isTravel ? (
+                                <Plane className="h-3.5 w-3.5 text-sky-500" />
+                              ) : isExpense ? (
+                                <ArrowDownLeft className="h-3.5 w-3.5 text-red-500" />
+                              ) : (
+                                <ArrowUpRight className="h-3.5 w-3.5 text-emerald-500" />
+                              )}
+                            </div>
+
+                            {/* Merchant + time */}
+                            <div className="min-w-0">
+                              <div className="flex items-center gap-1.5 min-w-0">
+                                <p className="text-sm font-medium text-foreground truncate">{t.merchant}</p>
+                                {taggedPeriod && (
+                                  <span className="text-[10px] font-semibold text-sky-500 bg-sky-500/10 px-1.5 py-0.5 rounded-full shrink-0 whitespace-nowrap">
+                                    ✈ {taggedPeriod.name}
+                                  </span>
+                                )}
+                              </div>
+                              <p className="text-[10px] text-muted-foreground">{timeStr}</p>
+                            </div>
+
+                            {/* Amount */}
+                            <span
+                              className={cn(
+                                "text-sm font-bold font-mono whitespace-nowrap",
+                                isTravel
+                                  ? "text-sky-500"
+                                  : isExpense
+                                    ? "text-red-500"
+                                    : "text-emerald-500"
+                              )}
+                            >
+                              {isExpense ? "-" : "+"}
+                              {Math.abs(t.amount).toLocaleString()}원
+                            </span>
+
+                            {/* Note button */}
+                            <button
+                              onClick={(e) => openNoteEdit(t, e)}
+                              className={cn(
+                                "w-5 h-5 flex items-center justify-center rounded transition-all shrink-0",
+                                t.note
+                                  ? "text-yellow-500"
+                                  : "opacity-0 group-hover:opacity-100 text-muted-foreground hover:text-yellow-500 hover:bg-yellow-500/10"
+                              )}
+                              title="특이사항 메모"
+                            >
+                              <MessageSquare className="w-3 h-3" />
+                            </button>
+                          </div>
+
+                          {/* Note display */}
+                          {t.note && noteEditId !== t.id && (
+                            <div className="flex items-start gap-1.5 px-1 pb-1 ml-10">
+                              <MessageSquare className="w-2.5 h-2.5 text-yellow-500/50 shrink-0 mt-0.5" />
+                              <p className="text-[10px] text-yellow-500/80">{t.note}</p>
                             </div>
                           )}
 
-                          {/* Icon */}
-                          <div
-                            className={cn(
-                              "h-7 w-7 rounded-full flex items-center justify-center shrink-0",
-                              isTravel
-                                ? "bg-sky-500/15"
-                                : isExpense
-                                  ? "bg-red-500/15"
-                                  : "bg-emerald-500/15"
-                            )}
-                          >
-                            {isTravel ? (
-                              <Plane className="h-3.5 w-3.5 text-sky-500" />
-                            ) : isExpense ? (
-                              <ArrowDownLeft className="h-3.5 w-3.5 text-red-500" />
-                            ) : (
-                              <ArrowUpRight className="h-3.5 w-3.5 text-emerald-500" />
-                            )}
-                          </div>
-
-                          {/* Merchant + time */}
-                          <div className="min-w-0">
-                            <div className="flex items-center gap-1.5 min-w-0">
-                              <p className="text-sm font-medium text-foreground truncate">{t.merchant}</p>
-                              {taggedPeriod && (
-                                <span className="text-[10px] font-semibold text-sky-500 bg-sky-500/10 px-1.5 py-0.5 rounded-full shrink-0 whitespace-nowrap">
-                                  ✈ {taggedPeriod.name}
-                                </span>
+                          {/* Note editor */}
+                          {noteEditId === t.id && (
+                            <div className="flex items-center gap-2 px-1 pb-1.5 ml-10">
+                              <input
+                                value={noteInput}
+                                onChange={(e) => setNoteInput(e.target.value)}
+                                onKeyDown={(e) => {
+                                  if (e.key === "Enter") saveNote(t.id);
+                                  if (e.key === "Escape") setNoteEditId(null);
+                                }}
+                                placeholder="특이사항 메모..."
+                                className="flex-1 min-w-0 text-xs bg-yellow-500/5 border border-yellow-500/20 rounded-md px-2 py-1 text-foreground placeholder:text-muted-foreground/50 focus:outline-none focus:border-yellow-500/40"
+                                autoFocus
+                              />
+                              <button
+                                onClick={() => saveNote(t.id)}
+                                className="text-[10px] text-yellow-500 px-2 py-1 rounded hover:bg-yellow-500/10 shrink-0"
+                              >
+                                저장
+                              </button>
+                              {t.note && (
+                                <button
+                                  onClick={() => { onUpdateMeta(t.id, { note: null }); setNoteEditId(null); }}
+                                  className="text-[10px] text-muted-foreground hover:text-red-500 shrink-0"
+                                >
+                                  삭제
+                                </button>
                               )}
                             </div>
-                            <p className="text-[10px] text-muted-foreground">{timeStr}</p>
-                          </div>
-
-                          {/* Amount */}
-                          <span
-                            className={cn(
-                              "text-sm font-bold font-mono whitespace-nowrap",
-                              isTravel
-                                ? "text-sky-500"
-                                : isExpense
-                                  ? "text-red-500"
-                                  : "text-emerald-500"
-                            )}
-                          >
-                            {isExpense ? "-" : "+"}
-                            {Math.abs(t.amount).toLocaleString()}원
-                          </span>
+                          )}
                         </div>
                       );
                     })}

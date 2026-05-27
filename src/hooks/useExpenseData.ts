@@ -11,6 +11,8 @@ export interface Transaction {
   status: string;
   source: string;
   user_id: string;
+  category: string | null;
+  note: string | null;
 }
 
 export interface ParsedRow {
@@ -29,7 +31,7 @@ const parseAmount = (raw: string): number => {
 
 export const parseXlsxRows = (rows: unknown[][]): ParsedRow[] => {
   return rows
-    .slice(1) // 헤더 제외
+    .slice(1)
     .filter((row) => row[0] && row[1] && row[2])
     .map((row) => {
       const amount = parseAmount(String(row[2]));
@@ -67,7 +69,6 @@ export const useExpenseData = () => {
 
     const payload = rows.map((r) => ({ ...r, user_id: user.id }));
 
-    // 중복 방지: upsert on (user_id, transaction_at, merchant, amount)
     const { data, error } = await supabase
       .from("transactions")
       .upsert(payload, {
@@ -82,6 +83,20 @@ export const useExpenseData = () => {
     const skipped = rows.length - inserted;
     const fresh = await fetchTransactions();
     return { inserted, skipped, fresh };
+  };
+
+  const updateTransactionMeta = async (
+    id: string,
+    fields: { category?: string | null; note?: string | null }
+  ) => {
+    const { error } = await supabase
+      .from("transactions")
+      .update(fields)
+      .eq("id", id);
+    if (error) throw error;
+    setTransactions((prev) =>
+      prev.map((t) => (t.id === id ? { ...t, ...fields } : t))
+    );
   };
 
   useEffect(() => {
@@ -157,5 +172,6 @@ export const useExpenseData = () => {
     thisMonthExpense,
     saveTransactions,
     fetchTransactions,
+    updateTransactionMeta,
   };
 };
