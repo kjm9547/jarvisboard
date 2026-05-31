@@ -60,7 +60,7 @@ const NewsCard = ({
       ) : (
         <div className="h-full w-full flex items-center justify-center">
           <img
-            src="/assets/icons/character_glow.png"
+            src="/assets/icons/wormman_128x128.png"
             alt=""
             className="h-14 w-14 object-contain opacity-15"
           />
@@ -130,7 +130,7 @@ const NewsRow = ({
       ) : (
         <div className="h-full w-full flex items-center justify-center">
           <img
-            src="/assets/icons/character_glow.png"
+            src="/assets/icons/wormman_128x128.png"
             alt=""
             className="h-8 w-8 object-contain opacity-20"
           />

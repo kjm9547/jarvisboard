@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Check, Plus, Trash2, Target, Sparkles, Zap, Flame, Pencil } from "lucide-react";
+import { Check, Plus, Trash2, Target, Sparkles, Zap, Flame, Pencil, CalendarDays, ChevronLeft, ChevronRight } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useGoals, type Timeframe, type Goal } from "@/hooks/useGoals";
 import { cn } from "@/lib/utils";
@@ -455,12 +455,149 @@ const AddGoalForm = ({ config, onAdd }: AddGoalFormProps) => {
   );
 };
 
+// ─── YearlyGoalRow ───────────────────────────────────────────────────────────
+
+interface YearlyGoalRowProps {
+  goal: Goal;
+  onToggle: () => void;
+  onRemove: () => void;
+  onUpdate: (patch: Partial<Pick<Goal, "title" | "memo">>) => void;
+}
+
+const YearlyGoalRow = ({ goal, onToggle, onRemove, onUpdate }: YearlyGoalRowProps) => {
+  const { editing, draft, setDraft, open, close, save, onKey } = useInlineEdit(goal, onUpdate);
+
+  return (
+    <div className={cn(
+      "group relative rounded-xl border border-border/60 bg-card overflow-hidden border-l-[3px] border-l-emerald-500/70",
+      "hover:bg-emerald-500/5 transition-all duration-150 hover:shadow-md hover:border-border",
+      goal.completed && "opacity-55"
+    )}>
+      <div className="px-3 py-2.5 flex items-start gap-2.5">
+        <button
+          onClick={onToggle}
+          className={cn(
+            "mt-0.5 shrink-0 w-4 h-4 rounded border-2 flex items-center justify-center transition-all",
+            goal.completed
+              ? "text-emerald-400 bg-emerald-500/20 border-emerald-400"
+              : "border-muted-foreground/30 hover:border-emerald-400"
+          )}
+        >
+          {goal.completed && <Check className="w-2.5 h-2.5" strokeWidth={3.5} />}
+        </button>
+
+        <div className="flex-1 min-w-0">
+          {editing ? (
+            <EditForm draft={draft} setDraft={setDraft} onKey={onKey} onSave={save} onCancel={close} />
+          ) : (
+            <>
+              <p
+                className={cn(
+                  "text-sm font-medium text-foreground leading-snug cursor-default",
+                  goal.completed && "line-through text-muted-foreground"
+                )}
+                onDoubleClick={open}
+              >
+                {goal.title}
+              </p>
+              {goal.memo && (
+                <p className="text-[11px] text-muted-foreground mt-0.5 leading-relaxed line-clamp-2">
+                  {goal.memo}
+                </p>
+              )}
+            </>
+          )}
+        </div>
+
+        {!editing && (
+          <div className="opacity-0 group-hover:opacity-100 transition-opacity flex gap-0.5 shrink-0 mt-0.5">
+            <button onClick={open} className="p-1 rounded text-muted-foreground/60 hover:text-foreground hover:bg-muted/60 transition-colors">
+              <Pencil className="w-3 h-3" />
+            </button>
+            <button onClick={onRemove} className="p-1 rounded text-muted-foreground/60 hover:text-red-500 hover:bg-red-500/10 transition-colors">
+              <Trash2 className="w-3 h-3" />
+            </button>
+          </div>
+        )}
+      </div>
+    </div>
+  );
+};
+
+// ─── AddYearlyGoalForm ───────────────────────────────────────────────────────
+
+const AddYearlyGoalForm = ({ year, onAdd }: { year: number; onAdd: (t: string, m: string) => Promise<void> }) => {
+  const [open, setOpen] = useState(false);
+  const [title, setTitle] = useState("");
+  const [memo, setMemo] = useState("");
+  const [loading, setLoading] = useState(false);
+
+  const submit = async () => {
+    if (!title.trim()) return;
+    setLoading(true);
+    await onAdd(title.trim(), memo.trim());
+    setTitle(""); setMemo(""); setLoading(false); setOpen(false);
+  };
+
+  const onKey = (e: React.KeyboardEvent) => {
+    if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); submit(); }
+    if (e.key === "Escape") { setOpen(false); setTitle(""); setMemo(""); }
+  };
+
+  if (!open) {
+    return (
+      <button
+        onClick={() => setOpen(true)}
+        className="w-full flex items-center gap-2 rounded-xl px-3 py-2 text-sm font-medium transition-all bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-400 border border-emerald-500/20"
+      >
+        <Plus className="w-4 h-4" />
+        {year}년 목표 추가
+      </button>
+    );
+  }
+
+  return (
+    <div className="rounded-xl border border-border bg-card p-3 space-y-2">
+      <input
+        autoFocus
+        value={title}
+        onChange={(e) => setTitle(e.target.value)}
+        onKeyDown={onKey}
+        placeholder={`${year}년 목표를 입력하세요...`}
+        className="w-full text-sm bg-muted/50 border border-border rounded-md px-2.5 py-1.5 text-foreground outline-none focus:ring-1 focus:ring-emerald-500/30 placeholder:text-muted-foreground/50"
+      />
+      <textarea
+        value={memo}
+        onChange={(e) => setMemo(e.target.value)}
+        onKeyDown={onKey}
+        placeholder="메모 / 상세 내용 (선택)"
+        rows={2}
+        className="w-full text-xs bg-muted/50 border border-border rounded-md px-2.5 py-1.5 text-muted-foreground outline-none focus:ring-1 focus:ring-emerald-500/30 resize-none placeholder:text-muted-foreground/40"
+      />
+      <div className="flex gap-1.5">
+        <Button size="sm" className="h-7 text-xs" onClick={submit} disabled={!title.trim() || loading}>
+          {loading ? "추가 중..." : "추가"}
+        </Button>
+        <Button size="sm" variant="ghost" className="h-7 text-xs" onClick={() => { setOpen(false); setTitle(""); setMemo(""); }}>
+          취소
+        </Button>
+      </div>
+    </div>
+  );
+};
+
 // ─── GoalsDashboard ──────────────────────────────────────────────────────────
 
 export const GoalsDashboard = () => {
-  const { goals, loading, addGoal, updateGoal, removeGoal, byTimeframe } = useGoals();
+  const { goals, loading, addGoal, updateGoal, removeGoal, byTimeframe, byYear } = useGoals();
+  const currentYear = new Date().getFullYear();
+  const [selectedYear, setSelectedYear] = useState(currentYear);
 
-  const nonBucket = goals.filter((g) => g.timeframe !== "bucket");
+  const yearlyGoals = goals.filter((g) => g.timeframe === "yearly");
+  const yearsWithGoals = [...new Set(yearlyGoals.map((g) => g.year).filter((y): y is number => y !== null))];
+  const displayYears = [...new Set([...yearsWithGoals, currentYear - 1, currentYear, currentYear + 1, currentYear + 2])].sort((a, b) => a - b);
+
+  const nonBucket = goals.filter((g) => g.timeframe !== "bucket" && g.timeframe !== "yearly");
   const doneCount = nonBucket.filter((g) => g.completed).length;
   const pct = nonBucket.length > 0 ? Math.round((doneCount / nonBucket.length) * 100) : 0;
 
@@ -540,6 +677,141 @@ export const GoalsDashboard = () => {
             ))}
             <AddBucketForm
               onAdd={(t, m) => addGoal(t, "bucket", m || undefined).then(() => {})}
+            />
+          </div>
+        )}
+      </div>
+
+      {/* ── Yearly Goals ── */}
+      <div className="rounded-2xl border border-emerald-500/20 bg-emerald-500/3 p-5 mb-6">
+        <div className="flex items-center justify-between mb-4">
+          <div className="flex items-center gap-2.5">
+            <div className="rounded-xl bg-emerald-500/15 p-2 shrink-0">
+              <CalendarDays className="w-4 h-4 text-emerald-400" />
+            </div>
+            <div>
+              <h3 className="text-sm font-bold text-foreground">연도별 목표</h3>
+              <p className="text-[10px] text-muted-foreground">한 해의 목표를 계획하고 달성하세요</p>
+            </div>
+          </div>
+          {(() => {
+            const yr = byYear(selectedYear);
+            const done = yr.filter((g) => g.completed).length;
+            return yr.length > 0 ? (
+              <span className="text-xs font-medium text-emerald-400 bg-emerald-500/10 border border-emerald-500/20 px-3 py-1 rounded-full font-mono">
+                {done} / {yr.length} 달성
+              </span>
+            ) : null;
+          })()}
+        </div>
+
+        {/* Year tabs */}
+        <div className="flex items-center gap-1.5 mb-4">
+          <button
+            onClick={() => setSelectedYear((y) => y - 1)}
+            className="p-1.5 rounded-lg text-muted-foreground hover:text-foreground hover:bg-muted/50 transition-colors shrink-0"
+          >
+            <ChevronLeft className="w-4 h-4" />
+          </button>
+          <div className="flex gap-1.5 overflow-x-auto scrollbar-hide flex-1">
+            {displayYears.map((year) => {
+              const yr = byYear(year);
+              const done = yr.filter((g) => g.completed).length;
+              const isSelected = year === selectedYear;
+              const isCurrentYear = year === currentYear;
+              return (
+                <button
+                  key={year}
+                  onClick={() => setSelectedYear(year)}
+                  className={cn(
+                    "shrink-0 flex flex-col items-center gap-0.5 px-3.5 py-2 rounded-xl text-sm font-semibold transition-all border",
+                    isSelected
+                      ? "bg-emerald-500/20 border-emerald-500/50 text-emerald-400"
+                      : "bg-transparent border-border/50 text-muted-foreground hover:text-foreground hover:border-border hover:bg-muted/30"
+                  )}
+                >
+                  <span>{year}</span>
+                  {yr.length > 0 && (
+                    <span className={cn(
+                      "text-[9px] font-mono leading-none",
+                      isSelected ? "text-emerald-400/70" : "text-muted-foreground/50"
+                    )}>
+                      {done}/{yr.length}
+                    </span>
+                  )}
+                  {yr.length === 0 && isCurrentYear && (
+                    <span className={cn("text-[9px] leading-none", isSelected ? "text-emerald-500/60" : "text-muted-foreground/30")}>
+                      올해
+                    </span>
+                  )}
+                </button>
+              );
+            })}
+          </div>
+          <button
+            onClick={() => setSelectedYear((y) => y + 1)}
+            className="p-1.5 rounded-lg text-muted-foreground hover:text-foreground hover:bg-muted/50 transition-colors shrink-0"
+          >
+            <ChevronRight className="w-4 h-4" />
+          </button>
+        </div>
+
+        {/* Progress bar */}
+        {(() => {
+          const yr = byYear(selectedYear);
+          if (yr.length === 0) return null;
+          const done = yr.filter((g) => g.completed).length;
+          const pct = Math.round((done / yr.length) * 100);
+          return (
+            <div className="mb-4">
+              <div className="flex justify-between items-baseline mb-1.5">
+                <p className="text-[10px] text-muted-foreground">
+                  <span className={cn("font-semibold", pct === 100 ? "text-emerald-400" : "text-foreground")}>{pct}%</span> 달성
+                </p>
+                <p className="text-[10px] font-mono text-muted-foreground">{done} / {yr.length}개</p>
+              </div>
+              <div className="h-1.5 rounded-full bg-emerald-500/10 overflow-hidden">
+                <div
+                  className="h-full rounded-full bg-emerald-500 transition-all duration-500"
+                  style={{ width: `${pct}%` }}
+                />
+              </div>
+            </div>
+          );
+        })()}
+
+        {/* Goal list */}
+        {loading ? (
+          <div className="space-y-2">
+            {[1, 2, 3].map((i) => <div key={i} className="h-11 rounded-xl bg-muted/20 animate-pulse" />)}
+          </div>
+        ) : (
+          <div className="space-y-1.5">
+            {(() => {
+              const yr = byYear(selectedYear);
+              const sorted = [...yr.filter((g) => !g.completed), ...yr.filter((g) => g.completed)];
+              return (
+                <>
+                  {sorted.map((goal) => (
+                    <YearlyGoalRow
+                      key={goal.id}
+                      goal={goal}
+                      onToggle={() => updateGoal(goal.id, { completed: !goal.completed })}
+                      onRemove={() => removeGoal(goal.id)}
+                      onUpdate={(patch) => updateGoal(goal.id, patch)}
+                    />
+                  ))}
+                  {sorted.length === 0 && (
+                    <p className="text-xs text-muted-foreground/40 text-center py-4">
+                      {selectedYear}년 목표를 추가해보세요
+                    </p>
+                  )}
+                </>
+              );
+            })()}
+            <AddYearlyGoalForm
+              year={selectedYear}
+              onAdd={(t, m) => addGoal(t, "yearly", m || undefined, selectedYear).then(() => {})}
             />
           </div>
         )}

@@ -1,13 +1,14 @@
 import { useState, useEffect, useCallback } from "react";
 import { supabase } from "@/service/supabase";
 
-export type Timeframe = "short" | "medium" | "long" | "bucket";
+export type Timeframe = "short" | "medium" | "long" | "bucket" | "yearly";
 
 export interface Goal {
   id: string;
   title: string;
   memo: string | null;
   timeframe: Timeframe;
+  year: number | null;
   completed: boolean;
   created_at: string;
 }
@@ -23,7 +24,7 @@ export const useGoals = () => {
 
     const { data } = await supabase
       .from("goals")
-      .select("id, title, memo, timeframe, completed, created_at")
+      .select("id, title, memo, timeframe, year, completed, created_at")
       .eq("user_id", user.id)
       .order("created_at", { ascending: true });
 
@@ -33,14 +34,14 @@ export const useGoals = () => {
 
   useEffect(() => { fetchGoals(); }, [fetchGoals]);
 
-  const addGoal = async (title: string, timeframe: Timeframe, memo?: string): Promise<Goal | null> => {
+  const addGoal = async (title: string, timeframe: Timeframe, memo?: string, year?: number): Promise<Goal | null> => {
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) return null;
 
     const { data, error } = await supabase
       .from("goals")
-      .insert({ title: title.trim(), timeframe, memo: memo?.trim() || null, user_id: user.id })
-      .select("id, title, memo, timeframe, completed, created_at")
+      .insert({ title: title.trim(), timeframe, memo: memo?.trim() || null, year: year ?? null, user_id: user.id })
+      .select("id, title, memo, timeframe, year, completed, created_at")
       .single();
 
     if (error || !data) return null;
@@ -66,6 +67,7 @@ export const useGoals = () => {
   };
 
   const byTimeframe = (tf: Timeframe) => goals.filter((g) => g.timeframe === tf);
+  const byYear = (year: number) => goals.filter((g) => g.timeframe === "yearly" && g.year === year);
 
-  return { goals, loading, addGoal, updateGoal, removeGoal, byTimeframe };
+  return { goals, loading, addGoal, updateGoal, removeGoal, byTimeframe, byYear };
 };

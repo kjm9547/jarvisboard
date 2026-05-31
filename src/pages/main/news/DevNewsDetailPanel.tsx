@@ -243,7 +243,7 @@ export const DevNewsDetailPanel = ({ item, onClose }: DevNewsDetailPanelProps) =
   const [owner, repo] = item.source === "github" ? item.title.split("/") : [];
 
   return (
-    <Card className="sticky top-16.5 p-0 gap-0 animate-in fade-in slide-in-from-left-3 duration-300">
+    <Card className="md:sticky md:top-16.5 p-0 gap-0 animate-in fade-in slide-in-from-left-3 duration-300">
       <CardHeader className="border-b border-border px-6 py-4">
         <div className="flex items-start justify-between gap-4">
           <div className="flex-1 min-w-0 space-y-1">

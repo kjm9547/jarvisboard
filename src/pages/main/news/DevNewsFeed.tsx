@@ -278,10 +278,103 @@ export const DevNewsFeed = () => {
     setSelectedCompany(null);
   };
 
+  const listPanel = (
+    <div className={cn("md:w-80 md:shrink-0 md:sticky md:top-16.5", selectedItem ? "hidden md:block" : "w-full")}>
+      {/* 피드 탭 */}
+      <div className="flex items-center gap-1 p-0.5 rounded-xl bg-muted/50 border border-border mb-3">
+        {(
+          [
+            { id: "bigtech" as ListTab, label: "빅테크", icon: <Building2 className="h-3.5 w-3.5" /> },
+            { id: "github" as ListTab, label: "GitHub", icon: <Code2 className="h-3.5 w-3.5" /> },
+          ] as const
+        ).map((tab) => (
+          <button
+            key={tab.id}
+            onClick={() => handleTabChange(tab.id)}
+            className={cn(
+              "flex flex-1 items-center justify-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium transition-all duration-150",
+              listTab === tab.id
+                ? "bg-background text-foreground shadow-sm ring-1 ring-border"
+                : "text-muted-foreground hover:text-foreground hover:bg-background/60",
+            )}
+          >
+            {tab.icon}
+            {tab.label}
+          </button>
+        ))}
+      </div>
+
+      {/* 빅테크 회사 필터 */}
+      {listTab === "bigtech" && !isLoadingTech && availableCompanies.length > 0 && (
+        <CompanyFilterBar
+          companies={availableCompanies}
+          selectedCompany={selectedCompany}
+          counts={companyCounts}
+          onSelect={handleCompanySelect}
+        />
+      )}
+
+      {/* 리스트 카드 */}
+      <Card className="p-0 gap-0 overflow-hidden">
+        <ScrollArea className="md:h-[calc(100vh-240px)]">
+          {listTab === "bigtech" ? (
+            isLoadingTech ? (
+              <SkeletonRows count={10} />
+            ) : filteredTechItems.length === 0 ? (
+              <div className="py-12 text-center text-xs text-muted-foreground">
+                {selectedCompany
+                  ? `${COMPANY_CONFIG[selectedCompany]?.label ?? selectedCompany} 기사가 없습니다`
+                  : "데이터가 없습니다. 수집 스크립트를 먼저 실행해주세요."}
+              </div>
+            ) : (
+              filteredTechItems.map((item, i) => (
+                <div
+                  key={item.id}
+                  className="animate-in fade-in duration-200 fill-mode-[backwards]"
+                  style={{ animationDelay: `${i * 20}ms` }}
+                >
+                  <BigTechRow
+                    item={item}
+                    isSelected={selectedItem?.id === item.id}
+                    onSelect={handleSelect}
+                  />
+                </div>
+              ))
+            )
+          ) : isLoadingGH ? (
+            <SkeletonRows count={8} />
+          ) : ghItems.length === 0 ? (
+            <div className="py-12 text-center text-xs text-muted-foreground">불러오기 실패</div>
+          ) : (
+            ghItems.map((item, i) => (
+              <div
+                key={item.id}
+                className="animate-in fade-in duration-200 fill-mode-[backwards]"
+                style={{ animationDelay: `${i * 20}ms` }}
+              >
+                <GitHubRow
+                  item={item}
+                  isSelected={selectedItem?.id === item.id}
+                  onSelect={handleSelect}
+                />
+              </div>
+            ))
+          )}
+        </ScrollArea>
+      </Card>
+
+      <p className="text-[10px] text-muted-foreground text-right mt-1.5 pr-1">
+        {listTab === "bigtech"
+          ? `${filteredTechItems.length}개 기사${selectedCompany ? ` (${COMPANY_CONFIG[selectedCompany]?.label ?? selectedCompany})` : ""}`
+          : `${ghItems.length}개 저장소`}
+      </p>
+    </div>
+  );
+
   return (
     <div className="flex gap-5 items-start">
-      {/* 왼쪽: 본문 영역 */}
-      <div className="flex-1 min-w-0">
+      {/* 왼쪽: 본문 영역 (모바일에서 아이템 미선택 시 숨김) */}
+      <div className={cn("flex-1 min-w-0", !selectedItem && "hidden md:flex")}>
         {selectedItem ? (
           <DevNewsDetailPanel item={selectedItem} onClose={() => setSelectedItem(null)} />
         ) : (
@@ -289,97 +382,8 @@ export const DevNewsFeed = () => {
         )}
       </div>
 
-      {/* 오른쪽: 리스트 사이드바 */}
-      <div className="w-80 shrink-0 sticky top-16.5">
-        {/* 피드 탭 */}
-        <div className="flex items-center gap-1 p-0.5 rounded-xl bg-muted/50 border border-border mb-3">
-          {(
-            [
-              { id: "bigtech" as ListTab, label: "빅테크", icon: <Building2 className="h-3.5 w-3.5" /> },
-              { id: "github" as ListTab, label: "GitHub", icon: <Code2 className="h-3.5 w-3.5" /> },
-            ] as const
-          ).map((tab) => (
-            <button
-              key={tab.id}
-              onClick={() => handleTabChange(tab.id)}
-              className={cn(
-                "flex flex-1 items-center justify-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium transition-all duration-150",
-                listTab === tab.id
-                  ? "bg-background text-foreground shadow-sm ring-1 ring-border"
-                  : "text-muted-foreground hover:text-foreground hover:bg-background/60",
-              )}
-            >
-              {tab.icon}
-              {tab.label}
-            </button>
-          ))}
-        </div>
-
-        {/* 빅테크 회사 필터 */}
-        {listTab === "bigtech" && !isLoadingTech && availableCompanies.length > 0 && (
-          <CompanyFilterBar
-            companies={availableCompanies}
-            selectedCompany={selectedCompany}
-            counts={companyCounts}
-            onSelect={handleCompanySelect}
-          />
-        )}
-
-        {/* 리스트 카드 */}
-        <Card className="p-0 gap-0 overflow-hidden">
-          <ScrollArea style={{ height: "calc(100vh - 240px)" }}>
-            {listTab === "bigtech" ? (
-              isLoadingTech ? (
-                <SkeletonRows count={10} />
-              ) : filteredTechItems.length === 0 ? (
-                <div className="py-12 text-center text-xs text-muted-foreground">
-                  {selectedCompany
-                    ? `${COMPANY_CONFIG[selectedCompany]?.label ?? selectedCompany} 기사가 없습니다`
-                    : "데이터가 없습니다. 수집 스크립트를 먼저 실행해주세요."}
-                </div>
-              ) : (
-                filteredTechItems.map((item, i) => (
-                  <div
-                    key={item.id}
-                    className="animate-in fade-in duration-200 fill-mode-[backwards]"
-                    style={{ animationDelay: `${i * 20}ms` }}
-                  >
-                    <BigTechRow
-                      item={item}
-                      isSelected={selectedItem?.id === item.id}
-                      onSelect={handleSelect}
-                    />
-                  </div>
-                ))
-              )
-            ) : isLoadingGH ? (
-              <SkeletonRows count={8} />
-            ) : ghItems.length === 0 ? (
-              <div className="py-12 text-center text-xs text-muted-foreground">불러오기 실패</div>
-            ) : (
-              ghItems.map((item, i) => (
-                <div
-                  key={item.id}
-                  className="animate-in fade-in duration-200 fill-mode-[backwards]"
-                  style={{ animationDelay: `${i * 20}ms` }}
-                >
-                  <GitHubRow
-                    item={item}
-                    isSelected={selectedItem?.id === item.id}
-                    onSelect={handleSelect}
-                  />
-                </div>
-              ))
-            )}
-          </ScrollArea>
-        </Card>
-
-        <p className="text-[10px] text-muted-foreground text-right mt-1.5 pr-1">
-          {listTab === "bigtech"
-            ? `${filteredTechItems.length}개 기사${selectedCompany ? ` (${COMPANY_CONFIG[selectedCompany]?.label ?? selectedCompany})` : ""}`
-            : `${ghItems.length}개 저장소`}
-        </p>
-      </div>
+      {/* 오른쪽: 리스트 (모바일에서 아이템 선택 시 숨김, 미선택 시 전체폭) */}
+      {listPanel}
     </div>
   );
 };

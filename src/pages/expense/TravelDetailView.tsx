@@ -1,5 +1,6 @@
 import { useState } from "react";
-import { X, Plane, Calendar, MessageSquare } from "lucide-react";
+import { X, Plane, Calendar, MessageSquare, RotateCcw } from "lucide-react";
+import { Popover } from "radix-ui";
 import { getEffectiveCategory, getCategory, CATEGORY_RULES, CATEGORY_KEYS, type Category } from "@/lib/categoryRules";
 import type { TravelPeriod } from "@/hooks/useTravelPeriods";
 import type { Transaction } from "@/hooks/useExpenseData";
@@ -266,26 +267,78 @@ export const TravelDetailView = ({ period, transactions, onClose, onUntag, onUpd
                   return (
                     <div key={t.id}>
                       {/* Main row */}
-                      <div className="group flex items-center gap-2.5 rounded-lg px-3 py-2.5 hover:bg-white/5 transition-colors">
-                        {/* Category badge button */}
-                        <button
-                          onClick={() => setCatEditId(isCatOpen ? null : t.id)}
-                          className={cn(
-                            "shrink-0 flex items-center gap-1 px-2 py-1 rounded-md text-[11px] font-semibold transition-all border",
-                            isCatOpen ? "opacity-100 ring-1" : "opacity-80 hover:opacity-100"
-                          )}
-                          style={{
-                            backgroundColor: hex + "22",
-                            borderColor: hex + (isCatOpen ? "80" : "40"),
-                            color: hex,
+                      <div className="group flex items-center gap-2 rounded-lg px-3 py-2.5 hover:bg-white/5 transition-colors">
+                        {/* Category badge — Popover trigger */}
+                        <Popover.Root
+                          open={isCatOpen}
+                          onOpenChange={(open) => {
+                            setCatEditId(open ? t.id : null);
+                            if (open) setNoteEditId(null);
                           }}
-                          title="카테고리 변경"
                         >
-                          {effectiveCat}
-                          {isCustomCat && (
-                            <span className="text-[9px] opacity-70">✎</span>
-                          )}
-                        </button>
+                          <Popover.Trigger asChild>
+                            <button
+                              className="shrink-0 flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-xs font-semibold transition-all border"
+                              style={{
+                                backgroundColor: hex + (isCatOpen ? "30" : "18"),
+                                borderColor: hex + (isCatOpen ? "80" : "45"),
+                                color: hex,
+                              }}
+                              title="카테고리 변경"
+                            >
+                              <span className="text-sm leading-none">{CATEGORY_RULES[effectiveCat].emoji}</span>
+                              <span>{effectiveCat}</span>
+                              {isCustomCat && <span className="text-[9px] opacity-60">✎</span>}
+                            </button>
+                          </Popover.Trigger>
+                          <Popover.Portal>
+                            <Popover.Content
+                              side="bottom"
+                              align="start"
+                              sideOffset={6}
+                              className="z-200 rounded-xl bg-card border border-border shadow-2xl p-2.5 min-w-52 animate-in fade-in-0 zoom-in-95 data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=closed]:zoom-out-95"
+                            >
+                              <p className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wider px-1 pb-2">카테고리 선택</p>
+                              <div className="grid grid-cols-2 gap-1.5">
+                                {CATEGORY_KEYS.map((c) => {
+                                  const cHex = CATEGORY_RULES[c].hex;
+                                  const isSelected = c === effectiveCat;
+                                  return (
+                                    <button
+                                      key={c}
+                                      onClick={() => {
+                                        const autocat = getCategory(t.merchant);
+                                        onUpdateMeta(t.id, { category: c === autocat ? null : c });
+                                        setCatEditId(null);
+                                      }}
+                                      className={cn(
+                                        "flex items-center gap-2 px-3 py-2 rounded-lg text-sm font-semibold border transition-all",
+                                        isSelected ? "opacity-100 shadow-sm" : "opacity-40 hover:opacity-80"
+                                      )}
+                                      style={{
+                                        backgroundColor: cHex + (isSelected ? "28" : "12"),
+                                        borderColor: cHex + (isSelected ? "65" : "20"),
+                                        color: cHex,
+                                      }}
+                                    >
+                                      <span className="text-base leading-none">{CATEGORY_RULES[c].emoji}</span>
+                                      <span>{c}</span>
+                                    </button>
+                                  );
+                                })}
+                              </div>
+                              {isCustomCat && (
+                                <button
+                                  onClick={() => { onUpdateMeta(t.id, { category: null }); setCatEditId(null); }}
+                                  className="mt-2 w-full flex items-center justify-center gap-1.5 text-xs text-muted-foreground hover:text-foreground rounded-lg py-1.5 px-2 hover:bg-muted/40 border border-transparent hover:border-border/50 transition-all"
+                                >
+                                  <RotateCcw className="w-3 h-3" />
+                                  자동 분류로 초기화
+                                </button>
+                              )}
+                            </Popover.Content>
+                          </Popover.Portal>
+                        </Popover.Root>
 
                         {/* Merchant + date */}
                         <div className="flex-1 min-w-0">
@@ -329,45 +382,6 @@ export const TravelDetailView = ({ period, transactions, onClose, onUntag, onUpd
                           <X className="w-3 h-3" />
                         </button>
                       </div>
-
-                      {/* Inline category picker */}
-                      {isCatOpen && (
-                        <div className="flex items-center gap-1.5 flex-wrap px-3 pb-2.5 pt-0.5">
-                          {CATEGORY_KEYS.map((c) => {
-                            const cHex = CATEGORY_RULES[c].hex;
-                            const isSelected = c === effectiveCat;
-                            return (
-                              <button
-                                key={c}
-                                onClick={() => {
-                                  const autocat = getCategory(t.merchant);
-                                  onUpdateMeta(t.id, { category: c === autocat ? null : c });
-                                  setCatEditId(null);
-                                }}
-                                className={cn(
-                                  "px-3 py-1 rounded-full text-[11px] font-semibold border transition-all",
-                                  isSelected ? "opacity-100 shadow-sm" : "opacity-45 hover:opacity-75"
-                                )}
-                                style={{
-                                  backgroundColor: cHex + (isSelected ? "30" : "15"),
-                                  borderColor: cHex + (isSelected ? "70" : "30"),
-                                  color: cHex,
-                                }}
-                              >
-                                {c}
-                              </button>
-                            );
-                          })}
-                          {isCustomCat && (
-                            <button
-                              onClick={() => { onUpdateMeta(t.id, { category: null }); setCatEditId(null); }}
-                              className="px-2.5 py-1 rounded-full text-[11px] border border-border text-muted-foreground hover:text-foreground hover:border-border/80 transition-all"
-                            >
-                              초기화
-                            </button>
-                          )}
-                        </div>
-                      )}
 
                       {/* Note display */}
                       {t.note && noteEditId !== t.id && (

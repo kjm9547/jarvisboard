@@ -13,18 +13,18 @@ export const NewsBanner = ({ newsCount, daysCount, isLoading }: NewsBannerProps)
       <div className="absolute -right-8 -top-8 h-40 w-40 rounded-full bg-primary/5 pointer-events-none" />
       <div className="absolute -right-4 -bottom-6 h-24 w-24 rounded-full bg-primary/8 pointer-events-none" />
 
-      <div className="absolute right-4 bottom-0 pointer-events-none select-none">
+      <div className="absolute right-4 bottom-0 pointer-events-none select-none hidden sm:block">
         <img
-          src="/assets/icons/character_flying.png"
+          src="/assets/icons/wormman_128x128.png"
           alt=""
           className="h-28 object-contain opacity-60 drop-shadow-md"
         />
       </div>
 
-      <div className="relative px-6 py-5 pr-36">
+      <div className="relative px-6 py-5 sm:pr-36">
         <div className="flex items-center gap-2 mb-3">
           <img
-            src="/assets/icons/icon_512_32x32_circle_resized_32px.png"
+            src="/assets/icons/wormman_32x32.png"
             alt="Jarvis"
             className="h-5 w-5 rounded-full"
           />

@@ -1,5 +1,6 @@
 export const CATEGORY_RULES = {
   식비: {
+    emoji: "🍽️",
     bg: "bg-orange-500",
     text: "text-orange-400",
     hex: "#f97316",
@@ -8,6 +9,7 @@ export const CATEGORY_RULES = {
       "김밥", "분식", "도시락", "맘스터치", "롯데리아", "써브웨이"],
   },
   교통: {
+    emoji: "🚌",
     bg: "bg-blue-500",
     text: "text-blue-400",
     hex: "#3b82f6",
@@ -15,24 +17,28 @@ export const CATEGORY_RULES = {
       "KTX", "기차", "고속버스", "항공", "에어", "공항", "주차"],
   },
   숙박: {
+    emoji: "🏨",
     bg: "bg-purple-500",
     text: "text-purple-400",
     hex: "#a855f7",
     keywords: ["호텔", "모텔", "펜션", "에어비앤비", "숙소", "리조트", "게스트하우스", "야놀자", "여기어때"],
   },
   쇼핑: {
+    emoji: "🛍️",
     bg: "bg-pink-500",
     text: "text-pink-400",
     hex: "#ec4899",
     keywords: ["쿠팡", "11번가", "무신사", "올리브영", "다이소", "이마트", "롯데마트", "홈플러스", "코스트코", "SSG"],
   },
   문화: {
+    emoji: "🎭",
     bg: "bg-yellow-500",
     text: "text-yellow-400",
     hex: "#eab308",
     keywords: ["넷플릭스", "유튜브", "CGV", "메가박스", "롯데시네마", "스포티파이", "왓챠"],
   },
   기타: {
+    emoji: "📦",
     bg: "bg-gray-500",
     text: "text-gray-400",
     hex: "#6b7280",

@@ -34,7 +34,7 @@ export const Header = () => {
           className="flex items-center gap-2 font-bold text-base text-foreground mr-4 md:mr-8 shrink-0"
         >
           <img
-            src="/assets/icons/icon_512_32x32_circle_resized_32px.png"
+            src="/assets/icons/wormman_32x32.png"
             alt="Jarvis"
             className="h-7 w-7 rounded-full"
           />

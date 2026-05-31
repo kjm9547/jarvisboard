@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect, useRef } from "react";
 
 const CLIENT_ID = import.meta.env.VITE_GOOGLE_CLIENT_ID ?? "";
 const SCOPES = [
@@ -18,34 +18,43 @@ const loadStoredToken = (): string | null => {
   return null;
 };
 
-// OAuth 리다이렉트 후 URL 해시에서 access_token 파싱
-const parseHashToken = (): string | null => {
-  const hash = window.location.hash.substring(1);
-  if (!hash) return null;
-  const params = new URLSearchParams(hash);
-  const accessToken = params.get("access_token");
-  const expiresIn = Number(params.get("expires_in") ?? 3600);
-  if (!accessToken) return null;
-  localStorage.setItem(TOKEN_KEY, accessToken);
-  localStorage.setItem(EXPIRY_KEY, String(Date.now() + expiresIn * 1000));
-  window.history.replaceState({}, "", window.location.pathname + window.location.search);
-  return accessToken;
-};
-
 export const useYouTubeAuth = () => {
-  const [token] = useState<string | null>(() => parseHashToken() ?? loadStoredToken());
+  const [token, setToken] = useState<string | null>(loadStoredToken);
+  const [gisReady, setGisReady] = useState(false);
+  const clientRef = useRef<TokenClient | null>(null);
+
+  useEffect(() => {
+    const setup = () => {
+      if (!CLIENT_ID || !window.google?.accounts?.oauth2) return;
+      clientRef.current = window.google.accounts.oauth2.initTokenClient({
+        client_id: CLIENT_ID,
+        scope: SCOPES,
+        callback: (response: TokenResponse) => {
+          if (response.error || !response.access_token) return;
+          const expiry = Date.now() + (response.expires_in ?? 3600) * 1000;
+          localStorage.setItem(TOKEN_KEY, response.access_token);
+          localStorage.setItem(EXPIRY_KEY, String(expiry));
+          setToken(response.access_token);
+        },
+      });
+      setGisReady(true);
+    };
+
+    if (window.google?.accounts?.oauth2) {
+      setup();
+    } else {
+      const script = document.querySelector<HTMLScriptElement>(
+        'script[src*="accounts.google.com/gsi/client"]'
+      );
+      if (!script) return;
+      script.addEventListener("load", setup, { once: true });
+    }
+  }, []);
 
   const signIn = () => {
-    const redirectUri = window.location.origin + window.location.pathname;
-    const params = new URLSearchParams({
-      client_id: CLIENT_ID,
-      redirect_uri: redirectUri,
-      response_type: "token",
-      scope: SCOPES,
-      prompt: "consent",
-      include_granted_scopes: "true",
-    });
-    window.location.href = `https://accounts.google.com/o/oauth2/v2/auth?${params}`;
+    if (!clientRef.current) return;
+    // 이미 동의한 경우 팝업 없이 조용히 토큰 재발급, 미동의 시 계정 선택 팝업
+    clientRef.current.requestAccessToken({ prompt: "" });
   };
 
   const signOut = () => {
@@ -53,8 +62,8 @@ export const useYouTubeAuth = () => {
     if (current) window.google?.accounts?.oauth2?.revoke(current);
     localStorage.removeItem(TOKEN_KEY);
     localStorage.removeItem(EXPIRY_KEY);
-    window.location.reload();
+    setToken(null);
   };
 
-  return { token, gisReady: true, isSignedIn: !!token, signIn, signOut };
+  return { token, gisReady, isSignedIn: !!token, signIn, signOut };
 };
